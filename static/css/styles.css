@@ -1,0 +1,325 @@
+@font-face {
+  font-family: 'Monaspace Neon';
+  src: url('https://cdn.ujjwalvivek.com/fonts/Monaspace/Neon/Var.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+}
+
+:root {
+  --bg-color: #050505;
+  --text-color: #f8fafc;
+  --font-family: 'Monaspace Neon', monospace;
+}
+
+body,
+html {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--bg-color);
+  font-family: var(--font-family);
+  color: var(--text-color);
+}
+
+#bg-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.container {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 2rem;
+  padding: 2rem;
+  box-sizing: border-box;
+}
+
+.container--scroll {
+  overflow-y: auto;
+  align-items: stretch;
+  justify-content: flex-start;
+  padding-top: 4vh;
+}
+
+.hero-text {
+  text-align: center;
+  animation: fadeInDown 1s ease-out;
+  margin-bottom: 2rem;
+}
+
+.hero-text h1 {
+  font-size: 4rem;
+  font-weight: 700;
+  margin: 0;
+  background: linear-gradient(135deg, #f8fafc 0%, #94a3b8 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: -0.02em;
+}
+
+.hero-text p {
+  font-size: 1.25rem;
+  font-weight: 300;
+  color: #94a3b8;
+  margin: 0.5rem 0 0 0;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.hero-text .hero-subtitle {
+  letter-spacing: 0.2em;
+  font-size: 1rem;
+  opacity: 0.7;
+}
+
+.canvas-wrapper {
+  position: relative;
+  width: 100%;
+  max-width: 1000px;
+  margin: 20px auto;
+  animation: fadeInUp 1s ease-out 0.2s both;
+}
+
+.canvas-inner {
+  position: relative;
+  background: #050505;
+  border: 2px dashed rgba(255, 255, 255, 0.05);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+  z-index: 10;
+}
+
+.canvas-wrapper::before,
+.canvas-wrapper::after,
+.canvas-inner::before,
+.canvas-inner::after {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border-color: rgba(255, 255, 255, 0.5);
+  border-style: solid;
+  pointer-events: none;
+  z-index: 20;
+}
+
+.canvas-wrapper::before {
+  top: 0px;
+  left: 0px;
+  border-width: 2px 0 0 2px;
+}
+
+.canvas-wrapper::after {
+  top: 0px;
+  right: 0px;
+  border-width: 2px 2px 0 0;
+}
+
+.canvas-inner::before {
+  bottom: -1px;
+  left: -1px;
+  border-width: 0 0 2px 2px;
+}
+
+.canvas-inner::after {
+  bottom: -1px;
+  right: -1px;
+  border-width: 0 2px 2px 0;
+}
+
+#game-canvas {
+  display: block;
+  width: 100% !important;
+  height: auto !important;
+  aspect-ratio: 640 / 360 !important;
+  image-rendering: pixelated !important;
+  image-rendering: crisp-edges !important;
+  z-index: 10;
+}
+
+.dashboard-section {
+  width: 100%;
+  max-width: 1000px;
+  margin: 40px auto;
+  display: grid;
+  grid-template-columns: 1fr 350px;
+  gap: 40px;
+  color: #94a3b8;
+  font-family: 'Monaspace Neon', monospace;
+  text-align: left;
+  animation: fadeInUp 1s ease-out 0.4s both;
+}
+
+.dash-left h2 {
+  font-family: 'Monaspace Neon', monospace;
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #f8fafc;
+  margin: 1rem 0;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+  text-transform: uppercase;
+}
+
+.dash-left p,
+.dash-right p {
+  line-height: 1.6;
+  margin-bottom: 2rem;
+  font-size: 0.95rem;
+}
+
+.tags {
+  display: inline-flex;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.02);
+  font-size: 0.85rem;
+  padding: 4px 8px;
+}
+
+.tags span {
+  margin-right: 12px;
+}
+
+.tags span:last-child {
+  margin-right: 0;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 10px;
+  flex-direction: column;
+}
+
+.action-buttons button {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #f8fafc;
+  padding: 10px 20px;
+  font-family: 'Monaspace Neon', monospace;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.action-buttons button:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.stats-card {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.02);
+  padding: 20px;
+}
+
+.stats-card .card-title {
+  color: #f8fafc;
+  font-weight: bold;
+  font-size: 1.1rem;
+  margin-bottom: 5px;
+}
+
+.stats-card .card-subtitle {
+  font-size: 0.85rem;
+  opacity: 0.6;
+  margin-bottom: 20px;
+}
+
+.stat-badge {
+  display: inline-block;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 4px 8px;
+  font-size: 0.8rem;
+  margin-right: 8px;
+}
+
+.card-meta {
+  margin-bottom: 20px;
+}
+
+.card-commits {
+  border-top: 1px dashed rgba(255, 255, 255, 0.1);
+  padding-top: 15px;
+}
+
+.commit-row {
+  font-size: 0.8rem;
+  margin-bottom: 10px;
+}
+
+.commit-row:last-child {
+  margin-bottom: 0;
+}
+
+.commit-dot {
+  color: #fff;
+}
+
+.navbar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  padding: 20px 40px;
+  box-sizing: border-box;
+  z-index: 100;
+  display: flex;
+  justify-content: flex-end;
+  pointer-events: none;
+}
+
+.navbar button {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #f8fafc;
+  padding: 8px 16px;
+  font-family: 'Monaspace Neon', monospace;
+  font-size: 0.9rem;
+  cursor: pointer;
+  pointer-events: auto;
+  transition: all 0.2s;
+}
+
+.navbar button:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.navbar button.active {
+  color: #38bdf8;
+  border-color: #38bdf8;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+

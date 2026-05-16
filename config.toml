@@ -1,0 +1,6 @@
+base_url = "https://root.ujjwalvivek.com"
+title = "Ujjwal Vivek"
+description = "Projects & Subdomains"
+compile_sass = true
+
+[extra]
