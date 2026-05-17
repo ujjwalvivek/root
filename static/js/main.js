@@ -334,6 +334,7 @@ async function createWorkletAudioNode() {
         audioRaf = requestAnimationFrame(push);
     }
     push();
+    audioNode = node;
     return node;
 }
 function initAudio() {
@@ -344,7 +345,7 @@ function initAudio() {
             const mod = await initGame();
             audioEngineRef = new mod.AudioEngine(audioCtx.sampleRate);
             if (audioCtx.audioWorklet && typeof AudioWorkletNode === "function") {
-                try { audioNode = await createWorkletAudioNode(); }
+                try { await createWorkletAudioNode(); }
                 catch (workletErr) {
                     console.warn("AudioWorklet unavailable, using ScriptProcessor fallback:", workletErr);
                     createScriptAudioNode();
@@ -374,7 +375,6 @@ btn.addEventListener("click", async (e) => {
     }
 });
 window.playUISound = function (type) {
-    if (audioNode) audioNode.port.postMessage(type);
     if (audioEngineRef) { if (type === "click") audioEngineRef.play_ui_click(); if (type === "hover") audioEngineRef.play_ui_hover(); }
 };
 document.querySelectorAll("button, .hover-link, .dashboard-row").forEach((b) => {
