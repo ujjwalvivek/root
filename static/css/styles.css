@@ -1,7 +1,6 @@
 @font-face {
     font-family: "Monaspace Neon";
-    src: url("https://cdn.ujjwalvivek.com/fonts/Monaspace/Neon/Var.woff2")
-        format("woff2");
+    src: url("https://cdn.ujjwalvivek.com/fonts/Monaspace/Neon/Var.woff2") format("woff2");
     font-weight: 100 900;
     font-style: normal;
 }
@@ -244,9 +243,7 @@ html {
 .row-icon {
     color: #475569;
     flex-shrink: 0;
-    transition:
-        color 0.2s,
-        transform 0.2s;
+    transition: color 0.2s, transform 0.2s;
     transform: translateY(1px);
 }
 
@@ -266,41 +263,12 @@ html {
     opacity: 0.5;
     position: relative;
     top: -1px;
-    transition:
-        border-bottom-color 0.2s,
-        opacity 0.2s;
+    transition: border-bottom-color 0.2s, opacity 0.2s;
 }
 
 .dashboard-row:hover .row-leader {
     border-bottom-color: var(--accent);
     opacity: 0.8;
-}
-
-@media (max-width: 1000px) {
-    .dashboard-row {
-        flex-direction: column;
-        align-items: flex-start;
-        padding-left: 12px;
-        gap: 8px;
-    }
-
-    .dashboard-row:hover {
-        background-color: transparent;
-    }
-
-    .dashboard-row:hover .row-icon {
-        transform: translateY(1px) scale(1.1);
-    }
-
-    .row-leader {
-        display: none;
-    }
-
-    .badges-container {
-        flex-wrap: wrap;
-        width: 100%;
-        margin-top: 4px;
-    }
 }
 
 .badges-container {
@@ -374,5 +342,32 @@ html {
 
     to {
         opacity: 1;
+    }
+}
+
+@media (max-width: 1000px) {
+    .dashboard-row {
+        flex-direction: column;
+        align-items: flex-start;
+        padding-left: 12px;
+        gap: 8px;
+    }
+
+    .dashboard-row:hover {
+        background-color: transparent;
+    }
+
+    .dashboard-row:hover .row-icon {
+        transform: translateY(1px) scale(1.1);
+    }
+
+    .row-leader {
+        display: none;
+    }
+
+    .badges-container {
+        flex-wrap: wrap;
+        width: 100%;
+        margin-top: 4px;
     }
 }
