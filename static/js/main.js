@@ -305,7 +305,6 @@ let isAudioPlaying = false;
 let audioNode = null;
 let audioScriptNode = null;
 let audioEngineRef = null;
-let audioRaf = null;
 const btn = document.getElementById("audio-toggle");
 let audioInitPromise = null;
 function createScriptAudioNode() {
@@ -327,14 +326,15 @@ async function createWorkletAudioNode() {
     const node = new AudioWorkletNode(audioCtx, "audio");
     node.connect(audioCtx.destination);
     const buf = new Float32Array(4096);
-    function push() {
-        if (!audioEngineRef) return;
-        audioEngineRef.process(buf);
-        node.port.postMessage(buf.slice());
-        audioRaf = requestAnimationFrame(push);
+    function handleWorkletMsg(e) {
+        if (e.data === "need_data" && audioEngineRef) {
+            audioEngineRef.process(buf);
+            node.port.postMessage(buf.slice());
+        }
     }
-    push();
+    node.port.onmessage = handleWorkletMsg;
     audioNode = node;
+    node.port.postMessage("need_data");
     return node;
 }
 function initAudio() {
