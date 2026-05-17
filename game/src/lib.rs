@@ -31,24 +31,96 @@ struct Player {
     velocity: Vec2,
 }
 
+#[derive(Clone, Copy)]
+struct Ember {
+    origin_x: f32,
+    origin_y: f32,
+    phase: f32,
+    phase_speed: f32,
+    drift_x: f32,
+    speed: f32,
+    size: f32,
+    life: f32,
+    lifetime: f32,
+    r: f32,
+    g: f32,
+    b: f32,
+}
+
+const NUM_EMBERS: usize = 60;
+const SPAWN_ZONE_COUNT: usize = 3;
+
 pub struct HeroGame {
     player: Player,
+    embers: [Ember; NUM_EMBERS],
+    rng: u32,
+    time: f32,
+}
+
+fn rand_range(rng: &mut u32, lo: f32, hi: f32) -> f32 {
+    *rng = rng.wrapping_mul(1664525).wrapping_add(1013904223);
+    let t = (*rng >> 9) as f32 / 8388607.0;
+    lo + t * (hi - lo)
+}
+
+fn spawn_ember(rng: &mut u32, cx: f32, cy: f32, spread_x: f32, spread_y: f32, life_offset: f32) -> Ember {
+    let colors: [[f32; 3]; 5] = [
+        [1.0, 0.6, 0.1],
+        [1.0, 0.4, 0.0],
+        [1.0, 0.8, 0.3],
+        [1.0, 0.9, 0.6],
+        [0.9, 0.3, 0.0],
+    ];
+    let ci = (rand_range(rng, 0.0, 5.0)) as usize % 5;
+    let lifetime = rand_range(rng, 2.0, 5.0);
+    Ember {
+        origin_x: cx + rand_range(rng, -spread_x, spread_x),
+        origin_y: cy + rand_range(rng, -spread_y, spread_y),
+        phase: rand_range(rng, 0.0, 1.0),
+        phase_speed: rand_range(rng, 0.4, 1.2),
+        drift_x: rand_range(rng, -6.0, 6.0),
+        speed: rand_range(rng, 15.0, 35.0),
+        size: rand_range(rng, 1.5, 3.5),
+        life: life_offset,
+        lifetime,
+        r: colors[ci][0],
+        g: colors[ci][1],
+        b: colors[ci][2],
+    }
 }
 
 impl GameApp for HeroGame {
     type Action = HeroAction;
     fn internal_resolution() -> (u32, u32) { (640, 360) }
     fn init(_ctx: &mut Context<HeroAction>) -> Self {
-        HeroGame {
-            player: Player {
-                pos: Vec2::new(0.0, 344.0),
-                size: Vec2::new(16.0, 16.0),
-                velocity: Vec2::new(100.0, 0.0),
-            },
+        let mut rng = 12345u32;
+        let player = Player {
+            pos: Vec2::new(0.0, 344.0),
+            size: Vec2::new(16.0, 16.0),
+            velocity: Vec2::new(100.0, 0.0),
+        };
+        let ember_init = Ember {
+            origin_x: 0.0, origin_y: 0.0, phase: 0.0, phase_speed: 0.0,
+            drift_x: 0.0, speed: 0.0, size: 2.0, life: 1.0, lifetime: 1.0,
+            r: 1.0, g: 0.6, b: 0.1,
+        };
+        let mut embers = [ember_init; NUM_EMBERS];
+        let zones: [(f32, f32, f32, f32); SPAWN_ZONE_COUNT] = [
+            (210.0, 145.0, 170.0, 40.0),
+            (300.0, 205.0, 120.0, 40.0),
+            (0.0, 340.0, 16.0, 16.0),
+        ];
+        for (i, e) in embers.iter_mut().enumerate() {
+            let zi = i % SPAWN_ZONE_COUNT;
+            let (cx, cy, sx, sy) = zones[zi];
+            let life_offset = i as f32 / NUM_EMBERS as f32;
+            *e = spawn_ember(&mut rng, cx, cy, sx, sy, life_offset);
         }
+        HeroGame { player, embers, rng, time: 0.0 }
     }
     fn update(&mut self, ctx: &mut Context<HeroAction>) {
         let dt = ctx.delta_time.min(0.05);
+        self.time += dt;
         self.player.pos.x += self.player.velocity.x * dt;
         self.player.pos.y = 360.0 - self.player.size.y;
         let max_x = 640.0 - self.player.size.x;
@@ -59,11 +131,41 @@ impl GameApp for HeroGame {
             self.player.pos.x = max_x;
             self.player.velocity.x = -self.player.velocity.x.abs();
         }
+        let zones: [(f32, f32, f32, f32); SPAWN_ZONE_COUNT] = [
+            (210.0, 145.0, 170.0, 40.0),
+            (300.0, 205.0, 120.0, 40.0),
+            (self.player.pos.x + self.player.size.x / 2.0, self.player.pos.y, 30.0, 8.0),
+        ];
+        for e in self.embers.iter_mut() {
+            e.life += dt / e.lifetime;
+            if e.life >= 1.0 {
+                let zi = (rand_range(&mut self.rng, 0.0, SPAWN_ZONE_COUNT as f32)) as usize % SPAWN_ZONE_COUNT;
+                let (cx, cy, sx, sy) = zones[zi];
+                *e = spawn_ember(&mut self.rng, cx, cy, sx, sy, 0.0);
+            }
+            e.origin_y += dt * 0.2;
+        }
     }
     fn render(&mut self, ctx: &mut Context<HeroAction>) {
         ctx.draw_rect(self.player.pos, self.player.size, [0.8, 0.8, 0.8, 1.0]);
-        draw_text(ctx, "ujjwalvivek.com", Vec2::new(140.0, 140.0), [1.0, 1.0, 1.0, 1.0], 5.0, 1.5);
-        draw_text(ctx, "DIRECTORY", Vec2::new(260.0, 200.0), [0.7, 0.7, 0.7, 1.0], 3.0, 1.5);
+        ctx.draw_rect(Vec2::new(282.0, 96.0), Vec2::new(74.0, 2.0), [1.0, 0.4, 0.0, 1.0]);
+        ctx.draw_rect(Vec2::new(282.0, 131.0), Vec2::new(74.0, 2.0), [1.0, 0.4, 0.0, 1.0]);
+        ctx.draw_rect(Vec2::new(282.0, 96.0), Vec2::new(2.0, 37.0), [1.0, 0.4, 0.0, 1.0]);
+        ctx.draw_rect(Vec2::new(354.0, 96.0), Vec2::new(2.0, 37.0), [1.0, 0.4, 0.0, 1.0]);
+        draw_text(ctx, "u.v", Vec2::new(286.0, 100.0), [1.0, 0.6, 0.1, 1.0], 5.0, 1.5);
+        draw_text(ctx, "ujjwalvivek.com", Vec2::new(151.0, 170.0), [1.0, 1.0, 1.0, 1.0], 5.0, 1.5);
+        draw_text(ctx, "DIRECTORY", Vec2::new(259.0, 220.0), [0.7, 0.7, 0.7, 1.0], 3.0, 1.5);
+        for e in &self.embers {
+            let t = e.life;
+            let wobble = (t * e.phase_speed * TAU + e.phase * TAU).sin() * 12.0;
+            let x = e.origin_x + wobble + e.drift_x * t;
+            let y = e.origin_y - t * e.speed * e.lifetime + (t * 3.0).sin() * 4.0;
+            let fade_in = (t * 4.0).min(1.0);
+            let fade_out = ((1.0 - t) * 3.0).min(1.0);
+            let alpha = fade_in * fade_out * 0.75;
+            let s = e.size * (1.0 - t * 0.2);
+            ctx.draw_rect(Vec2::new(x, y), Vec2::new(s, s), [e.r, e.g, e.b, alpha]);
+        }
     }
     fn ui(
         &mut self,
@@ -71,7 +173,7 @@ impl GameApp for HeroGame {
         _ctx: &mut Context<Self::Action>,
         scene_params: &mut engine::SceneParams,
     ) {
-        scene_params.background_color = [0.05, 0.05, 0.05];
+        scene_params.background_color = [0.04, 0.04, 0.04];
         scene_params.fog_color = [0.08, 0.08, 0.08];
         scene_params.fog_density = 8.0;
         scene_params.fog_opacity = 0.7;
@@ -177,7 +279,7 @@ impl AudioEngine {
             kick_env: 0.0,
             synth_phase1: 0.0,
             synth_phase2: 0.0,
-            synth_freq: 110.0, // A2
+            synth_freq: 110.0,
             synth_env: 0.0,
             filter_state: 0.0,
             sub_phase: 0.0,
@@ -250,11 +352,11 @@ impl AudioEngine {
             self.ui_hover_phase = (self.ui_hover_phase + hover_pitch * dt) % 1.0;
             let hover_osc = (self.ui_hover_phase * TAU).sin();
             let hover_out = hover_osc * self.ui_hover_env * 0.15;
-            self.ui_hover_env *= 0.995; 
+            self.ui_hover_env *= 0.995;
             self.ui_click_seed = self.ui_click_seed.wrapping_mul(1664525).wrapping_add(1013904223);
             let noise = (self.ui_click_seed as f32 / u32::MAX as f32) * 2.0 - 1.0;
             let click_out = noise * self.ui_click_env * 0.20;
-            self.ui_click_env *= 0.985; 
+            self.ui_click_env *= 0.985;
             final_out += hover_out + click_out;
             output[i] = final_out.tanh();
         }
