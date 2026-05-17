@@ -341,17 +341,18 @@ function initAudio() {
     if (audioInitPromise) return audioInitPromise;
     audioInitPromise = (async () => {
         try {
-            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (!audioCtx || audioCtx.state === "closed") audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === "suspended") await audioCtx.resume();
             const mod = await initGame();
             audioEngineRef = new mod.AudioEngine(audioCtx.sampleRate);
-            if (audioCtx.audioWorklet && typeof AudioWorkletNode === "function") {
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+            if (!isIOS && audioCtx.audioWorklet && typeof AudioWorkletNode === "function") {
                 try { await createWorkletAudioNode(); }
                 catch (workletErr) {
                     console.warn("AudioWorklet unavailable, using ScriptProcessor fallback:", workletErr);
                     createScriptAudioNode();
                 }
             } else { createScriptAudioNode(); }
-            if (audioCtx.state === "suspended") await audioCtx.resume();
             return true;
         } catch (err) {
             console.error("Audio init failed:", err);
@@ -362,8 +363,11 @@ function initAudio() {
     })();
     return audioInitPromise;
 }
-document.addEventListener("pointerdown", () => {
-    initAudio();
+document.addEventListener("click", () => {
+    if (!audioCtx || audioCtx.state === "closed") {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === "suspended") audioCtx.resume();
+    }
 });
 btn.addEventListener("click", async (e) => {
     e.stopPropagation();
