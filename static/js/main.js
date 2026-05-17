@@ -30,6 +30,9 @@ const wrapper = document.createElement("div");
 wrapper.className = "canvas-wrapper";
 const inner = document.createElement("div");
 inner.className = "canvas-inner";
+const spinner = document.createElement("div");
+spinner.className = "canvas-spinner";
+inner.appendChild(spinner);
 wrapper.appendChild(inner);
 const pathAudioOn =
     "M3 7h2v5H3zm4 0h2v13H7zm4-3h2v16h-2zm4 0h2v13h-2zM5 5h2v2H5zm4 15h2v2H9zm4-18h2v2h-2zm4 15h2v2h-2zm2-5h2v5h-2zm2-2h2v2h-2zM1 12h2v2H1z";
@@ -370,61 +373,63 @@ init().then(() => {
     const gameCanvas = Array.from(canvases).find((c) => c.id !== "bg-canvas");
     if (gameCanvas) {
         gameCanvas.id = "game-canvas";
-        document.querySelector(".canvas-inner").appendChild(gameCanvas);
+        const ci = document.querySelector(".canvas-inner");
+        ci.innerHTML = "";
+        ci.appendChild(gameCanvas);
     }
 });
 let audioCtx = null;
 let isAudioPlaying = false;
-let synthWorkletNode = null;
+let audioNode = null;
 let audioEngineRef = null;
+let audioRaf = null;
 const btn = document.getElementById("audio-toggle");
 let audioInitPromise = null;
 function initAudio() {
     if (audioInitPromise) return audioInitPromise;
     audioInitPromise = (async () => {
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        if (audioCtx.audioWorklet) {
-            try {
-                await audioCtx.audioWorklet.addModule("/js/synth-processor.js");
-                synthWorkletNode = new AudioWorkletNode(
-                    audioCtx,
-                    "synth-processor",
-                );
-                synthWorkletNode.connect(audioCtx.destination);
-                return true;
-            } catch (err) {
-                console.error("AudioWorklet failed, falling back:", err);
-            }
-        }
         try {
             const mod = await import("/game/game.js");
             audioEngineRef = new mod.AudioEngine(audioCtx.sampleRate);
-            const bufSize = 4096;
-            const sn = audioCtx.createScriptProcessor(bufSize, 1, 1);
-            const buf = new Float32Array(bufSize);
-            sn.onaudioprocess = (e) => {
-                const ch = e.outputBuffer.getChannelData(0);
-                audioEngineRef.process(buf);
-                for (let i = 0; i < bufSize; i++) ch[i] = buf[i];
-            };
-            const osc = audioCtx.createOscillator();
-            osc.connect(sn);
-            sn.connect(audioCtx.destination);
+            if (audioCtx.audioWorklet) {
+                await audioCtx.audioWorklet.addModule("/js/synth-processor.js");
+                audioNode = new AudioWorkletNode(audioCtx, "synth-processor");
+                audioNode.connect(audioCtx.destination);
+                const buf = new Float32Array(4096);
+                function push() {
+                    if (!audioEngineRef) return;
+                    audioEngineRef.process(buf);
+                    audioNode.port.postMessage(buf.slice());
+                    audioRaf = requestAnimationFrame(push);
+                }
+                push();
+            } else {
+                const bufSize = 4096;
+                const buf = new Float32Array(bufSize);
+                const sn = audioCtx.createScriptProcessor(bufSize, 1, 1);
+                sn.onaudioprocess = (e) => {
+                    const ch = e.outputBuffer.getChannelData(0);
+                    audioEngineRef.process(buf);
+                    for (let i = 0; i < bufSize; i++) ch[i] = buf[i];
+                };
+                const osc = audioCtx.createOscillator();
+                osc.connect(sn);
+                sn.connect(audioCtx.destination);
+            }
             return true;
         } catch (err) {
             console.error("Audio init failed:", err);
+            window.updateAudioIcon("error");
             return false;
         }
     })();
     return audioInitPromise;
 }
-document.addEventListener("pointerdown", () => {
-    initAudio();
-});
+document.addEventListener("pointerdown", () => { initAudio(); });
 btn.addEventListener("click", async (e) => {
     e.stopPropagation();
     if (await initAudio()) {
-        if (synthWorkletNode) synthWorkletNode.port.postMessage("toggle_music");
         if (audioEngineRef) audioEngineRef.toggle_music();
         isAudioPlaying = !isAudioPlaying;
         window.updateAudioIcon(isAudioPlaying ? "on" : "off");
@@ -432,7 +437,7 @@ btn.addEventListener("click", async (e) => {
     }
 });
 window.playUISound = function (type) {
-    if (synthWorkletNode) synthWorkletNode.port.postMessage(type);
+    if (audioNode) audioNode.port.postMessage(type);
     if (audioEngineRef) {
         if (type === "click") audioEngineRef.play_ui_click();
         if (type === "hover") audioEngineRef.play_ui_hover();

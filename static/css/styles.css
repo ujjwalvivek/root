@@ -1,6 +1,7 @@
 @font-face {
     font-family: "Monaspace Neon";
-    src: url("https://cdn.ujjwalvivek.com/fonts/Monaspace/Neon/Var.woff2") format("woff2");
+    src: url("https://cdn.ujjwalvivek.com/fonts/Monaspace/Neon/Var.woff2")
+        format("woff2");
     font-weight: 100 900;
     font-style: normal;
 }
@@ -115,10 +116,29 @@ html {
 
 .canvas-inner {
     position: relative;
-    background: #050505;
-    border: 2px dashed rgba(var(--accent-rgb), 0.3);
+    background: #0a0a0a;
+    border: 2px dashed rgba(255, 255, 255, 0.05);
     box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
     z-index: 10;
+    aspect-ratio: 640 / 360;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.canvas-spinner {
+    width: 24px;
+    height: 24px;
+    border: 4px solid transparent;
+    border-top-color: #ffaa00;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 .canvas-wrapper::before,
@@ -224,7 +244,9 @@ html {
 .row-icon {
     color: #475569;
     flex-shrink: 0;
-    transition: color 0.2s, transform 0.2s;
+    transition:
+        color 0.2s,
+        transform 0.2s;
     transform: translateY(1px);
 }
 
@@ -244,7 +266,9 @@ html {
     opacity: 0.5;
     position: relative;
     top: -1px;
-    transition: border-bottom-color 0.2s, opacity 0.2s;
+    transition:
+        border-bottom-color 0.2s,
+        opacity 0.2s;
 }
 
 .dashboard-row:hover .row-leader {
