@@ -247,10 +247,9 @@ dashboardLinks.forEach((link) => {
 });
 dash.appendChild(actions);
 container.appendChild(dash);
-const footer = document.createElement("div");
-footer.className = "site-footer";
-footer.innerHTML = `<span>[EOF]</span> &copy; ${new Date().getFullYear()} Ujjwal Vivek`;
-container.appendChild(footer);
+const clickerMount = document.createElement("div");
+clickerMount.id = "clicker-mount";
+container.appendChild(clickerMount);
 body.appendChild(container);
 if (window.location.protocol !== "https:" && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1") {
     try {
@@ -368,6 +367,7 @@ document.addEventListener("click", () => {
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         if (audioCtx.state === "suspended") audioCtx.resume();
     }
+    initAudio();
 });
 btn.addEventListener("click", async (e) => {
     e.stopPropagation();

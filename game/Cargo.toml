@@ -11,6 +11,13 @@ engine = { package = "journey-engine", version = "1.2.2" }
 resonance = { package = "journey-sound", version = "1.2.2" }
 cadence = { package = "journey-sequencer", version = "1.2.2" }
 wasm-bindgen = "0.2.87"
+js-sys = "0.3"
+web-sys = { version = "0.3", features = [
+    "WebSocket", "MessageEvent",
+    "Document", "Element", "HtmlButtonElement", "EventTarget",
+    "Window", "Request", "RequestInit", "Headers", "RequestMode",
+    "HtmlElement", "console",
+] }
 wgpu = { version = "27.0", features = ["webgl"] }
 
 [profile.release]

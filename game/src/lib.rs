@@ -2,6 +2,7 @@ use engine::{Context, GameAction, GameApp, Vec2};
 use wasm_bindgen::prelude::*;
 use cadence::{Transport, EuclideanPattern, MarkovChain};
 use core::f32::consts::TAU;
+mod clicker;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum HeroAction {
@@ -445,4 +446,5 @@ impl AudioEngine {
 #[wasm_bindgen(start)]
 pub fn wasm_main() {
     engine::run_wasm::<HeroGame>();
+    clicker::init_clicker("#clicker-mount");
 }
