@@ -248,6 +248,20 @@ pub struct AudioEngine {
     ui_click_env: f32,
     ui_click_seed: u32,
     music_muted: bool,
+    hat_pat: EuclideanPattern<16>,
+    hat_env: f32,
+    hat_seed: u32,
+    pad_phases: [f32; 3],
+    pad_env: f32,
+    pad_freqs: [f32; 3],
+    lfo_phase: f32,
+    chord_idx: usize,
+    bass_freq: f32,
+    snare_env: f32,
+    snare_seed: u32,
+    arp_phase: f32,
+    arp_env: f32,
+    arp_note_idx: usize,
 }
 
 #[wasm_bindgen]
@@ -257,7 +271,7 @@ impl AudioEngine {
         let bpm = 80.0;
         let transport = Transport::new(sample_rate, bpm);
         let kick_pat = EuclideanPattern::<16>::new(4, 16, 0);
-        let synth_pat = EuclideanPattern::<16>::new(5, 16, 2);
+        let synth_pat = EuclideanPattern::<16>::new(7, 16, 2);
         let matrix = [
             [10, 30, 20, 10, 10, 10,  5,  5],
             [20, 10, 30, 20, 10,  5,  5,  0],
@@ -270,6 +284,7 @@ impl AudioEngine {
         ];
         let markov = MarkovChain::new(matrix, 0);
         let delay_samples = (sample_rate as f32 * 60.0 / bpm * 0.75) as usize;
+        let hat_pat = EuclideanPattern::<16>::new(8, 16, 0);
         Self {
             transport,
             sample_rate: sample_rate as f32,
@@ -292,6 +307,20 @@ impl AudioEngine {
             ui_click_env: 0.0,
             ui_click_seed: 123456789,
             music_muted: true,
+            hat_pat,
+            hat_env: 0.0,
+            hat_seed: 987654321,
+            pad_phases: [0.0; 3],
+            pad_env: 0.0,
+            pad_freqs: [0.0; 3],
+            lfo_phase: 0.0,
+            chord_idx: 0,
+            bass_freq: 55.0,
+            snare_env: 0.0,
+            snare_seed: 111111111,
+            arp_phase: 0.0,
+            arp_env: 0.0,
+            arp_note_idx: 0,
         }
     }
     pub fn play_ui_click(&mut self) {
@@ -304,11 +333,23 @@ impl AudioEngine {
         self.music_muted = !self.music_muted;
     }
     pub fn process(&mut self, output: &mut [f32]) {
-        let scale = [110.0, 130.81, 146.83, 164.81, 196.00, 220.0, 261.63, 293.66];
+        let chords: [(f32, f32, f32); 4] = [
+            (110.0, 130.81, 164.81),
+            (174.61, 220.0, 261.63),
+            (130.81, 164.81, 196.0),
+            (196.0, 246.94, 293.66),
+        ];
+        let scale = [110.0, 123.47, 130.81, 146.83, 164.81, 174.61, 196.00, 220.0];
         let dt = 1.0 / self.sample_rate;
         for i in 0..output.len() {
             if self.transport.tick() {
                 let step = self.transport.current_step() as usize;
+                if step == 0 {
+                    self.chord_idx = (self.chord_idx + 1) % 4;
+                    let (root, third, fifth) = chords[self.chord_idx];
+                    self.pad_freqs = [root, third, fifth];
+                    self.bass_freq = root * 0.5;
+                }
                 if self.kick_pat.is_active(step) {
                     self.kick_env = 1.0;
                 }
@@ -319,6 +360,17 @@ impl AudioEngine {
                     let next_state = self.markov.next(self.lfsr as u16);
                     self.synth_freq = scale[next_state];
                     self.synth_env = 1.0;
+                    self.pad_env = 1.0;
+                }
+                if step == 4 || step == 12 {
+                    self.snare_env = 1.0;
+                }
+                if step % 2 == 0 {
+                    self.arp_note_idx = (self.arp_note_idx + 1) % 3;
+                    self.arp_env = 1.0;
+                }
+                if self.hat_pat.is_active(step) {
+                    self.hat_env = 1.0;
                 }
             }
             let kick_pitch = 40.0 + (self.kick_env * 120.0);
@@ -326,20 +378,47 @@ impl AudioEngine {
             let kick_osc = (self.kick_phase * TAU).sin();
             let kick_out = kick_osc * self.kick_env;
             self.kick_env *= 0.9992;
-            self.sub_phase = (self.sub_phase + (self.synth_freq * 0.5) * dt) % 1.0;
+            self.sub_phase = (self.sub_phase + self.bass_freq * dt) % 1.0;
             let sub_osc = (self.sub_phase * TAU).sin();
             let sidechain = 1.0 - (self.kick_env * 0.8);
-            let sub_out = sub_osc * sidechain * 0.3;
+            let sub_out = sub_osc * sidechain * 0.12;
             self.synth_phase1 = (self.synth_phase1 + self.synth_freq * dt) % 1.0;
             self.synth_phase2 = (self.synth_phase2 + (self.synth_freq * 1.01) * dt) % 1.0;
             let saw1 = self.synth_phase1 * 2.0 - 1.0;
             let saw2 = self.synth_phase2 * 2.0 - 1.0;
             let synth_raw = (saw1 + saw2) * 0.5;
-            let cutoff = 0.02 + (self.synth_env * 0.15);
+            let lfo = (self.lfo_phase * TAU).sin();
+            self.lfo_phase = (self.lfo_phase + 0.3 * dt) % 1.0;
+            let lfo_mod = (lfo + 1.0) * 0.06;
+            let cutoff = 0.02 + lfo_mod + (self.synth_env * 0.15);
             self.filter_state += (synth_raw - self.filter_state) * cutoff;
             let synth_out = self.filter_state * self.synth_env;
             self.synth_env *= 0.9996;
-            let dry = (kick_out * 0.6) + sub_out + (synth_out * 0.5);
+            self.snare_seed = self.snare_seed.wrapping_mul(1664525).wrapping_add(1013904223);
+            let snare_noise = (self.snare_seed as f32 / u32::MAX as f32) * 2.0 - 1.0;
+            let snare_out = snare_noise * self.snare_env * 0.25;
+            self.snare_env *= 0.992;
+            self.hat_seed = self.hat_seed.wrapping_mul(1664525).wrapping_add(1013904223);
+            let hat_noise = (self.hat_seed as f32 / u32::MAX as f32) * 2.0 - 1.0;
+            let hat_out = hat_noise * self.hat_env * 0.08;
+            self.hat_env *= 0.96;
+            for ch in 0..3 {
+                let detune = [1.001, 1.0, 0.999][ch];
+                self.pad_phases[ch] = (self.pad_phases[ch] + self.pad_freqs[ch] * detune * dt) % 1.0;
+            }
+            let pad_osc = (self.pad_phases[0] * TAU).sin() * 0.15
+                + (self.pad_phases[1] * TAU).sin() * 0.15
+                + (self.pad_phases[2] * TAU).sin() * 0.10;
+            let pad_out = pad_osc * self.pad_env;
+            self.pad_env *= 0.9995;
+            let arp_freq = self.pad_freqs[self.arp_note_idx] * 2.0;
+            self.arp_phase = (self.arp_phase + arp_freq * dt) % 1.0;
+            let arp_osc = (self.arp_phase * TAU).sin()
+                + 0.5 * ((self.arp_phase * 2.0) % 1.0 * TAU).sin()
+                + 0.3 * ((self.arp_phase * 3.0) % 1.0 * TAU).sin();
+            let arp_out = arp_osc * 0.18 / 1.8 * self.arp_env;
+            self.arp_env *= 0.997;
+            let dry = (kick_out * 0.6) + sub_out + (synth_out * 0.5) + (pad_out * 0.35) + hat_out + snare_out + arp_out;
             let delay_read = self.delay_line[self.delay_idx];
             self.delay_line[self.delay_idx] = dry + (delay_read * 0.4);
             self.delay_idx = (self.delay_idx + 1) % self.delay_line.len();
