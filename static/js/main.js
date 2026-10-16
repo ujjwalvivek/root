@@ -89,17 +89,68 @@ const subtitle = document.createElement("p");
 subtitle.className = "hero-subtitle";
 subtitle.textContent = "";
 heroText.appendChild(subtitle);
+const hint = document.createElement("span");
+hint.className = "hover-link hero-hint";
+hint.setAttribute("role", "button");
+hint.tabIndex = 0;
+hint.textContent = "click to be counted";
+heroText.appendChild(hint);
 container.appendChild(heroText);
-const textToType = "TERMINAL ACCESS GRANTED";
+
+// "ROOT ACCESS GRANTED TO 7,337 STRANGERS": the number is the global click count from echopoint, the same one the
+// clicker box shows. It is read up front (a tiny request, well before the game loads) and then follows the clicker live.
+let visitors = null;
+let typed = false;
+const headline = (n) => (n == null ? "ROOT ACCESS GRANTED" : `ROOT ACCESS GRANTED TO ${n.toLocaleString("en-US")} ${n === 1 ? "STRANGER" : "STRANGERS"}`);
+const countReady = fetch("https://echopoint.ujjwalvivek.com/v1/click")
+    .then((r) => (r.ok ? r.json() : null))
+    .then((d) => (d && Number.isFinite(d.global) ? d.global : null))
+    .catch(() => null);
+function setVisitors(n) {
+    if (n == null || n === visitors) return;
+    visitors = n;
+    if (typed) subtitle.textContent = headline(n);
+}
+let textToType = headline(null);
 let typeIndex = 0;
 function typeWriter() {
     if (typeIndex < textToType.length) {
         subtitle.textContent += textToType.charAt(typeIndex);
         typeIndex++;
         setTimeout(typeWriter, 40 + Math.random() * 40);
+    } else {
+        typed = true;
+        subtitle.textContent = headline(visitors);
+        hint.classList.add("is-visible");
     }
 }
-setTimeout(typeWriter, 800);
+setTimeout(async () => {
+    const n = await Promise.race([countReady, new Promise((r) => setTimeout(() => r(null), 1500))]);
+    if (n != null) visitors = n;
+    textToType = headline(visitors);
+    typeWriter();
+}, 800);
+// Once the clicker box exists, mirror its number so the headline moves when anyone clicks.
+new MutationObserver(() => {
+    const el = document.getElementById("globalClickScore");
+    const digits = el && el.textContent.replace(/\D/g, "");
+    if (digits) setVisitors(Number(digits));
+}).observe(container, { childList: true, subtree: true, characterData: true });
+// Clicking the hint is the same as pressing CLICK ME; before the game has loaded it posts the click itself.
+let hintTimer = 0;
+function countMe() {
+    const btn = document.getElementById("globalClickBtn");
+    if (btn) btn.click();
+    else {
+        fetch("https://echopoint.ujjwalvivek.com/v1/click", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ type: "click", count: 1 }) }).catch(() => { });
+        setVisitors((visitors ?? 0) + 1);
+    }
+    hint.textContent = "counted";
+    clearTimeout(hintTimer);
+    hintTimer = setTimeout(() => { hint.textContent = "click to be counted"; }, 1500);
+}
+hint.addEventListener("click", (e) => { e.stopPropagation(); countMe(); });
+hint.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); countMe(); } });
 const wrapper = document.createElement("div");
 wrapper.className = "canvas-wrapper";
 const inner = document.createElement("div");
@@ -130,10 +181,8 @@ const NPM = "https://www.npmjs.com/package/@ujjwalvivek";
 const baseBadge = "bg=111111&badgeColor=513600&textColor=e8e8e8&border=ffaa00&borderWidth=2&rx=0&px=0&py=0";
 function badgeFor(b) {
     switch (b.kind) {
-        case "license": return { img: `${EP}/svg/badges/custom?${baseBadge}&logo=github&leftText=code&rightText=${b.spdx}`, href: `${GH}/${b.repo}/blob/main/LICENSE` };
         case "custom": return { img: `${EP}/svg/badges/custom?${baseBadge}&logo=${b.logo}&leftText=${b.left}&rightText=${b.right}`, href: b.href };
         case "stars": return { img: `${EP}/svg/badges/stars?repo=${b.repo}&${baseBadge}&logo=github`, href: `${GH}/${b.repo}` };
-        case "release": return { img: `${EP}/svg/badges/release?repo=${b.repo}&${baseBadge}&logo=github`, href: `${GH}/${b.repo}/releases` };
         case "npm": return { img: `${EP}/svg/badges/npm?${baseBadge}&logo=npm&package=${b.alias || b.pkg}`, href: `${NPM}/${b.pkg}` };
         case "cargo": return { img: `${EP}/svg/badges/cargo?crate=${b.crate}&${baseBadge}&logo=rust`, href: `https://crates.io/crates/${b.crate}` };
         case "pypi": return { img: `${EP}/svg/badges/pypi?package=${b.pkg}&${baseBadge}&logo=python`, href: `https://pypi.org/project/${b.pkg}` };
@@ -143,10 +192,8 @@ function badgeFor(b) {
 }
 // Rough size of a badge before its svg arrives, so the skeleton holds the space (px per char measured off real badges).
 const BADGE_TEXT = {
-    license: (b) => ["code", b.spdx],
     custom: (b) => [b.left, b.right],
     stars: () => ["stars", "0"],
-    release: () => ["release", "v0.0.0"],
     npm: () => ["npm", "v0.0.0"],
     cargo: () => ["cargo", "v0.0.0"],
     pypi: () => ["PyPI", "v0.0.0"],
@@ -159,7 +206,63 @@ function badgeSkeleton(b) {
     const r = 18 + right.length * 6.7;
     return { width: Math.round(l + r), split: Math.round((l / (l + r)) * 100) };
 }
-function buildRow(title, url, nodes) {
+// License and release sit next to the title as plain text. The license is static; the release tag and age come from
+// echopoint's small per-repo record. Colour and weight follow the data, so rows do not all look alike:
+//   license  warm coral, whatever the license
+//   release  bright and glowing when under 30 days old, amber under ~4 months, dim after that; italic below 1.0
+const releases = new Map();
+function releaseInfo(repo) {
+    if (!releases.has(repo)) {
+        releases.set(repo, fetch(`${EP}/v1/store/github:${repo}:release`)
+            .then((r) => (r.ok ? r.json() : null))
+            .then((d) => (d && d.tag_name && d.published_at ? d : null))
+            .catch(() => null));
+    }
+    return releases.get(repo);
+}
+function ageLabel(days) {
+    if (days < 1) return "today";
+    if (days < 30) return `${Math.floor(days)}d`;
+    if (days < 365) return `${Math.floor(days / 30)}mo`;
+    return `${Math.floor(days / 365)}y`;
+}
+function rowMeta(link) {
+    const meta = document.createElement("span");
+    meta.className = "row-meta";
+    if (link.license) {
+        const a = document.createElement("a");
+        a.href = `${GH}/${link.license.repo}/blob/main/LICENSE`;
+        a.target = "_blank";
+        a.className = "hover-link meta-license";
+        a.title = `${link.license.spdx} licensed`;
+        a.textContent = link.license.spdx;
+        meta.appendChild(a);
+    }
+    if (link.release) {
+        const a = document.createElement("a");
+        a.hidden = true;
+        a.target = "_blank";
+        releaseInfo(link.release).then((info) => {
+            if (!info) return;
+            const days = (Date.now() - Date.parse(info.published_at)) / 864e5;
+            const tier = days <= 30 ? "is-fresh" : days <= 120 ? "is-recent" : "is-old";
+            a.className = `hover-link meta-release ${tier}${/^v?0\./.test(info.tag_name) ? " is-prerelease" : ""}`;
+            a.href = info.html_url || `${GH}/${link.release}/releases`;
+            a.title = `released ${info.published_at.slice(0, 10)}`;
+            const ver = document.createElement("span");
+            ver.className = "ver";
+            ver.textContent = info.tag_name.length > 14 ? `${info.tag_name.slice(0, 14)}…` : info.tag_name;
+            const age = document.createElement("span");
+            age.className = "age";
+            age.textContent = ageLabel(days);
+            a.append(ver, age);
+            a.hidden = false;
+        });
+        meta.appendChild(a);
+    }
+    return meta.childNodes.length ? meta : null;
+}
+function buildRow(title, url, nodes, link) {
     const row = document.createElement("div");
     row.className = "dashboard-row";
     const linkGroup = document.createElement("div");
@@ -179,7 +282,12 @@ function buildRow(title, url, nodes) {
     textLink.className = "hover-link text-link";
     textLink.target = "_blank";
     textLink.textContent = title;
-    linkGroup.appendChild(textLink);
+    const titleLine = document.createElement("div");
+    titleLine.className = "title-line";
+    titleLine.appendChild(textLink);
+    const meta = link ? rowMeta(link) : null;
+    if (meta) titleLine.appendChild(meta);
+    linkGroup.appendChild(titleLine);
     row.appendChild(linkGroup);
     const badgesContainer = document.createElement("div");
     badgesContainer.className = "badges-container";
@@ -195,12 +303,48 @@ dashHeader.innerHTML = `<span class="prompt">root@ujjwalvivek:~$</span> ls -la`;
 dash.appendChild(dashHeader);
 const actions = document.createElement("div");
 actions.className = "action-buttons";
+// Badge svgs are heavy, so each is requested only once it is within 100px of the visible area, and at low priority
+// so it never competes with the font, the wasm or the wallpaper. The skeleton holds the space until then.
+// A stars badge first asks echopoint for the repo's star count (a ~1.5 KB record): at 0 the badge is dropped without
+// ever fetching its svg. If the count cannot be read the badge is shown anyway.
+const starCounts = new Map();
+function starCount(repo) {
+    if (!starCounts.has(repo)) {
+        starCounts.set(repo, fetch(`${EP}/v1/store/github:${repo}:repo`)
+            .then((r) => (r.ok ? r.json() : null))
+            .then((d) => (d && typeof d.stargazers_count === "number" ? d.stargazers_count : null))
+            .catch(() => null));
+    }
+    return starCounts.get(repo);
+}
+function loadBadge(a) {
+    const img = a.querySelector("img");
+    img.fetchPriority = "low";
+    img.src = img.dataset.src;
+}
+const badgeLoader = "IntersectionObserver" in window
+    ? new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+            if (!entry.isIntersecting) return;
+            const a = entry.target;
+            badgeLoader.unobserve(a);
+            if (!a.dataset.starsRepo) return loadBadge(a);
+            starCount(a.dataset.starsRepo).then((n) => {
+                if (n === 0) return a.remove();
+                a.classList.replace("is-counting", "is-loading");
+                loadBadge(a);
+            });
+        });
+    }, { root: container, rootMargin: "100px 0px" })
+    : null;
 links.forEach((link) => {
     const nodes = link.badges.map((badge) => {
         const { img, href } = badgeFor(badge);
         const a = document.createElement("a");
         a.href = href;
-        a.className = "hover-link badge-link is-loading";
+        const counting = badge.kind === "stars" && badgeLoader;
+        a.className = `hover-link badge-link ${counting ? "is-counting" : "is-loading"}`;
+        if (counting) a.dataset.starsRepo = badge.repo;
         a.target = "_blank";
         const sk = badgeSkeleton(badge);
         a.style.setProperty("--w", `${sk.width}px`);
@@ -209,11 +353,13 @@ links.forEach((link) => {
         b.className = "link-badge";
         b.addEventListener("load", () => a.classList.remove("is-loading"));
         b.addEventListener("error", () => a.classList.replace("is-loading", "is-failed"));
-        b.src = img;
+        b.dataset.src = img;
         a.appendChild(b);
+        if (badgeLoader) badgeLoader.observe(a);
+        else b.src = img;
         return a;
     });
-    actions.appendChild(buildRow(link.title, link.url, nodes));
+    actions.appendChild(buildRow(link.title, link.url, nodes, link));
 });
 dash.appendChild(actions);
 container.appendChild(dash);
