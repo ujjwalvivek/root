@@ -1,4 +1,5 @@
 import { loop, compose, primitives, } from "https://cdn.ujjwalvivek.com/scripts/substrate/latest/main.js";
+import { links } from "./projects.js";
 function installGlobal(name, value) {
     if (typeof globalThis[name] === "function") return;
     try { globalThis[name] = value; } catch (_) { Object.defineProperty(globalThis, name, { value, configurable: true }); }
@@ -123,86 +124,24 @@ window.updateAudioIcon = function (state) {
         audioBtn.innerHTML = `<svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="${d}" /></svg>`;
     }
 };
-const dash = document.createElement("div");
-dash.className = "dashboard-section";
-const dashHeader = document.createElement("div");
-dashHeader.className = "dashboard-header";
-dashHeader.innerHTML = `<span class="prompt">root@ujjwalvivek:~$</span> ls -la`;
-dash.appendChild(dashHeader);
-const actions = document.createElement("div");
-actions.className = "action-buttons";
+const EP = "https://echopoint.ujjwalvivek.com";
+const GH = "https://github.com/ujjwalvivek";
+const NPM = "https://www.npmjs.com/package/@ujjwalvivek";
 const baseBadge = "bg=111111&badgeColor=513600&textColor=e8e8e8&border=ffaa00&borderWidth=2&rx=0&px=0&py=0";
-const dashboardLinks = [
-    {
-        title: "ujjwalvivek.com", url: "https://ujjwalvivek.com", badges: [
-            { img: `https://echopoint.ujjwalvivek.com/svg/badges/custom?${baseBadge}&logo=github&leftText=code&rightText=MIT`, href: "https://github.com/ujjwalvivek/portfolio/blob/main/LICENSE", },
-            { img: `https://echopoint.ujjwalvivek.com/svg/badges/custom?${baseBadge}&logo=github&leftText=logs&rightText=MD`, href: "https://ujjwalvivek.com/blog", },
-            { img: `https://echopoint.ujjwalvivek.com/svg/badges/stars?repo=portfolio&${baseBadge}&logo=github`, href: "https://github.com/ujjwalvivek/portfolio", },
-        ],
-    },
-    {
-        title: "journey.ujjwalvivek.com", url: "https://journey.ujjwalvivek.com", badges: [
-            { img: `https://echopoint.ujjwalvivek.com/svg/badges/custom?${baseBadge}&logo=github&leftText=code&rightText=MIT`, href: "https://github.com/ujjwalvivek/journey/blob/main/LICENSE", },
-            { img: `https://echopoint.ujjwalvivek.com/svg/badges/custom?${baseBadge}&logo=game&leftText=game&rightText=PLAY`, href: "https://journey.ujjwalvivek.com", },
-            { img: `https://echopoint.ujjwalvivek.com/svg/badges/custom?${baseBadge}&logo=docs&leftText=docs&rightText=MD`, href: "https://docs.journey.ujjwalvivek.com", },
-            { img: `https://echopoint.ujjwalvivek.com/svg/badges/cargo?crate=journey-engine&${baseBadge}&logo=rust`, href: "https://crates.io/users/ujjwalvivek", },
-            { img: `https://echopoint.ujjwalvivek.com/svg/badges/stars?repo=journey&${baseBadge}&logo=github`, href: "https://github.com/ujjwalvivek/journey", },
-        ],
-    },
-    {
-        title: "substrate.ujjwalvivek.com", url: "https://substrate.ujjwalvivek.com", badges: [
-            { img: `https://echopoint.ujjwalvivek.com/svg/badges/custom?${baseBadge}&logo=github&leftText=code&rightText=MIT`, href: "https://github.com/ujjwalvivek/substrate/blob/main/LICENSE", },
-            { img: `https://echopoint.ujjwalvivek.com/svg/badges/custom?${baseBadge}&logo=game&leftText=bg&rightText=PLAY`, href: "https://substrate.ujjwalvivek.com/", },
-            { img: `https://echopoint.ujjwalvivek.com/svg/badges/custom?${baseBadge}&logo=docs&leftText=docs&rightText=MD`, href: "https://substrate.ujjwalvivek.com/#/docs", },
-            { img: `https://echopoint.ujjwalvivek.com/svg/badges/stars?repo=substrate&${baseBadge}&logo=github`, href: "https://github.com/ujjwalvivek/substrate", },
-        ],
-    },
-    {
-        title: "echopoint.ujjwalvivek.com", url: "https://echopoint.ujjwalvivek.com", badges: [
-            { img: `https://echopoint.ujjwalvivek.com/svg/badges/custom?${baseBadge}&logo=github&leftText=code&rightText=MIT`, href: "https://github.com/ujjwalvivek/echopoint/blob/main/LICENSE", },
-            { img: `https://echopoint.ujjwalvivek.com/svg/badges/custom?${baseBadge}&logo=game&leftText=svg&rightText=GENERATOR`, href: "https://echopoint.ujjwalvivek.com/#docs", },
-            { img: `https://echopoint.ujjwalvivek.com/svg/status?target=echopoint&${baseBadge}&logo=globe`, href: "https://echopoint.ujjwalvivek.com/v1/health", },
-            { img: `https://echopoint.ujjwalvivek.com/svg/badges/stars?repo=echopoint&${baseBadge}&logo=github`, href: "https://github.com/ujjwalvivek/echopoint", },
-        ],
-    },
-    {
-        title: "synclippy.ujjwalvivek.com", url: "https://synclippy.ujjwalvivek.com", badges: [
-            { img: `https://echopoint.ujjwalvivek.com/svg/badges/custom?${baseBadge}&logo=github&leftText=code&rightText=MIT`, href: "https://github.com/ujjwalvivek/synclippy/blob/main/LICENSE", },
-            { img: `https://echopoint.ujjwalvivek.com/svg/badges/docker?image=synclippy&${baseBadge}&logo=docker`, href: "https://hub.docker.com/r/ujjwalvivek/synclippy", },
-            { img: `https://echopoint.ujjwalvivek.com/svg/badges/custom?${baseBadge}&logo=game&leftText=open&rightText=SYNCLIPPY`, href: "https://synclippy.ujjwalvivek.com/", },
-            { img: `https://echopoint.ujjwalvivek.com/svg/badges/stars?repo=synclippy&${baseBadge}&logo=github`, href: "https://github.com/ujjwalvivek/synclippy", },
-        ],
-    },
-    {
-        title: "baremetal.ujjwalvivek.com", url: "https://baremetal.ujjwalvivek.com", badges: [
-            { img: `https://echopoint.ujjwalvivek.com/svg/badges/custom?${baseBadge}&logo=github&leftText=code&rightText=MIT`, href: "https://github.com/ujjwalvivek/baremetal/blob/main/LICENSE", },
-            { img: `https://echopoint.ujjwalvivek.com/svg/badges/custom?${baseBadge}&logo=game&leftText=open&rightText=TERMINAL`, href: "https://baremetal.ujjwalvivek.com/", },
-            { img: `https://echopoint.ujjwalvivek.com/svg/badges/stars?repo=baremetal&${baseBadge}&logo=github`, href: "https://github.com/ujjwalvivek/baremetal", },
-        ],
-    },
-    {
-        title: "devhub.ujjwalvivek.com", url: "https://devhub.ujjwalvivek.com", badges: [
-            { img: `https://echopoint.ujjwalvivek.com/svg/badges/custom?${baseBadge}&logo=github&leftText=code&rightText=MIT`, href: "https://github.com/ujjwalvivek/devhub/blob/main/LICENSE", },
-            { img: `https://echopoint.ujjwalvivek.com/svg/badges/custom?${baseBadge}&logo=binaries&leftText=download&rightText=DEVHUB`, href: "https://devhub.ujjwalvivek.com/", },
-            { img: `https://echopoint.ujjwalvivek.com/svg/badges/stars?repo=devhub&${baseBadge}&logo=github`, href: "https://github.com/ujjwalvivek/devhub", },
-        ],
-    },
-    {
-        title: "ujjwalvivek.itch.io", url: "https://ujjwalvivek.itch.io/", badges: [
-            { img: `https://echopoint.ujjwalvivek.com/svg/badges/custom?${baseBadge}&logo=game&leftText=games&rightText=PLAY`, href: "https://ujjwalvivek.itch.io/", },
-            { img: `https://echopoint.ujjwalvivek.com/svg/badges/npm?${baseBadge}&logo=npm&package=requiem`, href: "https://www.npmjs.com/package/requiem", },
-            { img: `https://echopoint.ujjwalvivek.com/svg/badges/npm?${baseBadge}&logo=npm&package=dino-blink`, href: "https://www.npmjs.com/package/dino-blink", },
-            { img: `https://echopoint.ujjwalvivek.com/svg/badges/npm?${baseBadge}&logo=npm&package=journey-engine`, href: "https://www.npmjs.com/package/journey-engine", },
-        ],
-    },
-    {
-        title: "github.com/ujjwalvivek/thereckoning", url: "https://github.com/ujjwalvivek/thereckoning", badges: [
-            { img: `https://echopoint.ujjwalvivek.com/svg/badges/custom?${baseBadge}&logo=github&leftText=code&rightText=MIT`, href: "https://github.com/ujjwalvivek/thereckoning/blob/main/LICENSE", },
-            { img: `https://echopoint.ujjwalvivek.com/svg/badges/stars?repo=thereckoning&${baseBadge}&logo=github`, href: "https://github.com/ujjwalvivek/thereckoning", },
-        ],
-    },
-];
-dashboardLinks.forEach((link) => {
+function badgeFor(b) {
+    switch (b.kind) {
+        case "license": return { img: `${EP}/svg/badges/custom?${baseBadge}&logo=github&leftText=code&rightText=${b.spdx}`, href: `${GH}/${b.repo}/blob/main/LICENSE` };
+        case "custom": return { img: `${EP}/svg/badges/custom?${baseBadge}&logo=${b.logo}&leftText=${b.left}&rightText=${b.right}`, href: b.href };
+        case "stars": return { img: `${EP}/svg/badges/stars?repo=${b.repo}&${baseBadge}&logo=github`, href: `${GH}/${b.repo}` };
+        case "release": return { img: `${EP}/svg/badges/release?repo=${b.repo}&${baseBadge}&logo=github`, href: `${GH}/${b.repo}/releases` };
+        case "npm": return { img: `${EP}/svg/badges/npm?${baseBadge}&logo=npm&package=${b.alias || b.pkg}`, href: `${NPM}/${b.pkg}` };
+        case "cargo": return { img: `${EP}/svg/badges/cargo?crate=${b.crate}&${baseBadge}&logo=rust`, href: `https://crates.io/crates/${b.crate}` };
+        case "pypi": return { img: `${EP}/svg/badges/pypi?package=${b.pkg}&${baseBadge}&logo=python`, href: `https://pypi.org/project/${b.pkg}` };
+        case "docker": return { img: `${EP}/svg/badges/docker?image=${b.image}&${baseBadge}&logo=docker`, href: `https://hub.docker.com/r/ujjwalvivek/${b.image}` };
+        case "status": return { img: `${EP}/svg/status?target=${b.target}&${baseBadge}&logo=globe`, href: b.href };
+    }
+}
+function buildRow(title, url, nodes) {
     const row = document.createElement("div");
     row.className = "dashboard-row";
     const linkGroup = document.createElement("div");
@@ -218,32 +157,40 @@ dashboardLinks.forEach((link) => {
     iconSvg.appendChild(iconPath);
     linkGroup.appendChild(iconSvg);
     const textLink = document.createElement("a");
-    textLink.href = link.url;
+    textLink.href = url;
     textLink.className = "hover-link text-link";
-    if (link.url !== "#") textLink.target = "_blank";
-    textLink.textContent = link.title;
+    textLink.target = "_blank";
+    textLink.textContent = title;
     linkGroup.appendChild(textLink);
     row.appendChild(linkGroup);
-    const leader = document.createElement("div");
-    leader.className = "row-leader";
-    row.appendChild(leader);
     const badgesContainer = document.createElement("div");
     badgesContainer.className = "badges-container";
-    if (link.badges) {
-        link.badges.forEach((badge) => {
-            const a = document.createElement("a");
-            a.href = badge.href;
-            a.className = "hover-link badge-link";
-            if (badge.href !== "#") a.target = "_blank";
-            const b = document.createElement("img");
-            b.src = badge.img;
-            b.className = "link-badge";
-            a.appendChild(b);
-            badgesContainer.appendChild(a);
-        });
-    }
+    nodes.forEach((n) => badgesContainer.appendChild(n));
     row.appendChild(badgesContainer);
-    actions.appendChild(row);
+    return row;
+}
+const dash = document.createElement("div");
+dash.className = "dashboard-section";
+const dashHeader = document.createElement("div");
+dashHeader.className = "dashboard-header";
+dashHeader.innerHTML = `<span class="prompt">root@ujjwalvivek:~$</span> ls -la`;
+dash.appendChild(dashHeader);
+const actions = document.createElement("div");
+actions.className = "action-buttons";
+links.forEach((link) => {
+    const nodes = link.badges.map((badge) => {
+        const { img, href } = badgeFor(badge);
+        const a = document.createElement("a");
+        a.href = href;
+        a.className = "hover-link badge-link";
+        a.target = "_blank";
+        const b = document.createElement("img");
+        b.src = img;
+        b.className = "link-badge";
+        a.appendChild(b);
+        return a;
+    });
+    actions.appendChild(buildRow(link.title, link.url, nodes));
 });
 dash.appendChild(actions);
 container.appendChild(dash);
