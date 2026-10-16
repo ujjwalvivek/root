@@ -100,6 +100,30 @@ html {
     line-height: 1.5;
 }
 
+/* The small line under the headline: quiet until the headline has typed out, then fades in. */
+.hero-text .hero-hint {
+    display: block;
+    width: fit-content;
+    margin: 0.6rem auto 0;
+    font-size: 0.7rem;
+    letter-spacing: 0.18em;
+    color: #64748b;
+    opacity: 0;
+    transition: opacity 0.9s ease, color 0.2s;
+    cursor: pointer;
+    user-select: none;
+}
+
+.hero-text .hero-hint.is-visible {
+    opacity: 1;
+}
+
+.hero-text .hero-hint:hover,
+.hero-text .hero-hint:focus-visible {
+    color: var(--accent);
+    outline: none;
+}
+
 @keyframes blink {
     50% {
         opacity: 0;
@@ -255,6 +279,7 @@ html {
 
 .link-group {
     min-width: 0;
+    align-items: flex-start;
 }
 
 .text-link {
@@ -308,6 +333,87 @@ html {
 .link-badge {
     height: 20px;
     display: block;
+}
+
+/* License and release as quiet inline text after the title. Colour and weight come from the data, so rows differ. */
+.title-line {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 2px 14px;
+    min-width: 0;
+}
+
+.row-meta {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 12px;
+    font-size: 0.72rem;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+}
+
+.row-meta a {
+    font-size: inherit;
+    text-decoration: none;
+}
+
+.meta-license {
+    text-transform: uppercase;
+    color: #ff7a59;
+    border-bottom: 1px dotted rgba(255, 122, 89, 0.55);
+}
+
+.meta-license:hover {
+    color: #f8fafc;
+}
+
+.meta-release .ver {
+    font-weight: 700;
+}
+
+.meta-release .age {
+    margin-left: 0.6em;
+    font-weight: 400;
+    color: #64748b;
+}
+
+.meta-release.is-fresh {
+    color: #ffcb5c;
+    text-shadow: 0 0 10px rgba(var(--accent-rgb), 0.65);
+}
+
+.meta-release.is-recent {
+    color: var(--accent);
+}
+
+.meta-release.is-old {
+    color: #a9801f;
+}
+
+.meta-release.is-prerelease .ver {
+    font-style: italic;
+    font-weight: 500;
+}
+
+.meta-release:hover {
+    color: #ffffff;
+}
+
+/* A stars badge waits, unseen and out of the layout, until its repo's star count is known. */
+.badge-link.is-counting {
+    position: absolute;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+/* A row left with no visible badges drops its connector and the gap above it. */
+.badges-container:not(:has(.badge-link:not(.is-counting)))::before {
+    display: none;
+}
+
+.badges-container:not(:has(.badge-link:not(.is-counting))) {
+    margin-top: -6px;
 }
 
 /* Placeholder while a badge svg loads: same box as the real thing (2px amber border, dark label, dark amber value). */
