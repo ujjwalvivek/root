@@ -141,6 +141,24 @@ function badgeFor(b) {
         case "status": return { img: `${EP}/svg/status?target=${b.target}&${baseBadge}&logo=globe`, href: b.href };
     }
 }
+// Rough size of a badge before its svg arrives, so the skeleton holds the space (px per char measured off real badges).
+const BADGE_TEXT = {
+    license: (b) => ["code", b.spdx],
+    custom: (b) => [b.left, b.right],
+    stars: () => ["stars", "0"],
+    release: () => ["release", "v0.0.0"],
+    npm: () => ["npm", "v0.0.0"],
+    cargo: () => ["cargo", "v0.0.0"],
+    pypi: () => ["PyPI", "v0.0.0"],
+    docker: () => ["docker", "v0.0"],
+    status: () => ["system status", "online"],
+};
+function badgeSkeleton(b) {
+    const [left, right] = BADGE_TEXT[b.kind](b);
+    const l = 34 + left.length * 6.7;
+    const r = 18 + right.length * 6.7;
+    return { width: Math.round(l + r), split: Math.round((l / (l + r)) * 100) };
+}
 function buildRow(title, url, nodes) {
     const row = document.createElement("div");
     row.className = "dashboard-row";
@@ -182,11 +200,16 @@ links.forEach((link) => {
         const { img, href } = badgeFor(badge);
         const a = document.createElement("a");
         a.href = href;
-        a.className = "hover-link badge-link";
+        a.className = "hover-link badge-link is-loading";
         a.target = "_blank";
+        const sk = badgeSkeleton(badge);
+        a.style.setProperty("--w", `${sk.width}px`);
+        a.style.setProperty("--split", `${sk.split}%`);
         const b = document.createElement("img");
-        b.src = img;
         b.className = "link-badge";
+        b.addEventListener("load", () => a.classList.remove("is-loading"));
+        b.addEventListener("error", () => a.classList.replace("is-loading", "is-failed"));
+        b.src = img;
         a.appendChild(b);
         return a;
     });

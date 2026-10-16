@@ -310,6 +310,52 @@ html {
     display: block;
 }
 
+/* Placeholder while a badge svg loads: same box as the real thing (2px amber border, dark label, dark amber value). */
+.badge-link.is-loading,
+.badge-link.is-failed {
+    position: relative;
+    box-sizing: border-box;
+    width: var(--w);
+    height: 20px;
+    overflow: hidden;
+    border: 2px solid var(--accent);
+    background: linear-gradient(90deg, #111111 var(--split), #513600 var(--split));
+    cursor: default;
+}
+
+.badge-link.is-loading .link-badge,
+.badge-link.is-failed .link-badge {
+    position: absolute;
+    visibility: hidden;
+}
+
+.badge-link.is-loading::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(100deg, transparent 20%, rgba(var(--accent-rgb), 0.3) 50%, transparent 80%);
+    transform: translateX(-100%);
+    animation: badge-shimmer 1.2s linear infinite;
+}
+
+/* Never loaded: keep the box so the row does not collapse, but stop the shimmer and dim it. */
+.badge-link.is-failed {
+    border-style: dashed;
+    opacity: 0.4;
+}
+
+@keyframes badge-shimmer {
+    to {
+        transform: translateX(100%);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .badge-link.is-loading::after {
+        animation: none;
+    }
+}
+
 .audio-toggle {
     background: none;
     border: none;
