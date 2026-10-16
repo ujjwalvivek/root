@@ -1,4 +1,4 @@
-import { loop, compose, primitives, } from "https://cdn.ujjwalvivek.com/scripts/substrate/latest/main.js";
+import { startBackground } from "./background.js";
 import { links } from "./projects.js";
 function installGlobal(name, value) {
     if (typeof globalThis[name] === "function") return;
@@ -211,31 +211,10 @@ if (window.location.protocol !== "https:" && window.location.hostname !== "local
     };
     if (navigator.gpu) navigator.gpu.requestAdapter = () => Promise.resolve(null);
 }
-window.initSubstrate = function initSubstrate() {
-    const cv = document.createElement("canvas");
-    cv.id = "bg-canvas";
-    document.body.insertBefore(cv, document.body.firstChild);
-    const mobile = /Mobi|Android|iPhone|iPad|iPod|webOS|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
-    const state = { speed: 0.05, fps: 60 };
-    const scene = compose([
-        { fn: primitives.background },
-        { fn: primitives.grid, options: { opacity: 1.0, spacing: 100, warpAmount: 10 } },
-        { fn: primitives.wireframes, options: { opacity: 0.5, density: mobile ? 0.6 : 1.0 } },
-        { fn: primitives.particles, options: { opacity: 0.25 } },
-        { fn: primitives.vignette, options: { opacity: 0.9, innerRadius: 0.3, outerRadius: 1.2 } },
-    ]);
-    const pal = { primary: "#404040", secondary: "#808080", accent: "#ffaa00", background: "#030303", };
-    function resize() {
-        cv.width = window.innerWidth;
-        cv.height = window.innerHeight;
-    }
-    window.addEventListener("resize", resize);
-    resize();
-    loop(cv, scene, pal, state);
-};
+startBackground()
+    .catch((err) => { console.error("Background init failed:", err); });
 initGame()
     .then(() => {
-        if (window.initSubstrate) window.initSubstrate();
         const canvases = document.querySelectorAll("canvas");
         const gameCanvas = Array.from(canvases).find((c) => c.id !== "bg-canvas");
         if (gameCanvas) {
