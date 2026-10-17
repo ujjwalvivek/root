@@ -1,8 +1,7 @@
-use engine::{Context, GameAction, GameApp, Vec2};
+use engine::{BloomSettings, Context, GameAction, GameApp, RenderLayer, SkyParams, SkyTransition, Vec2};
 use wasm_bindgen::prelude::*;
 use cadence::{Transport, EuclideanPattern, MarkovChain};
 use core::f32::consts::TAU;
-mod clicker;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum HeroAction {
@@ -26,6 +25,15 @@ impl GameAction for HeroAction {
     fn move_positive_x() -> Option<Self> { Some(Self::MoveRight) }
 }
 
+const W: f32 = 640.0;
+const H: f32 = 360.0;
+// How long a dot takes to fly into place, and how late the last one starts.
+const ASSEMBLE: f32 = 1.2;
+const NUM_EMBERS: usize = 140;
+const NUM_STARS: usize = 260;
+const TRAIL: usize = 28;
+const SPAWN_ZONE_COUNT: usize = 4;
+
 struct Player {
     pos: Vec2,
     size: Vec2,
@@ -48,12 +56,36 @@ struct Ember {
     b: f32,
 }
 
-const NUM_EMBERS: usize = 60;
-const SPAWN_ZONE_COUNT: usize = 3;
+#[derive(Clone, Copy)]
+struct Star {
+    x: f32,
+    y: f32,
+    phase: f32,
+    speed: f32,
+}
+
+// One LED of the wordmark. Every lit pixel of the font is split into several of these.
+#[derive(Clone, Copy)]
+struct Dot {
+    x: f32,
+    y: f32,
+    from_x: f32,
+    from_y: f32,
+    size: f32,
+    delay: f32,
+    phase: f32,
+    color: [f32; 3],
+}
 
 pub struct HeroGame {
     player: Player,
-    embers: [Ember; NUM_EMBERS],
+    trail: [Vec2; TRAIL],
+    trail_head: usize,
+    embers: Vec<Ember>,
+    stars: Vec<Star>,
+    dots: Vec<Dot>,
+    sky: SkyTransition,
+    sky_stage: usize,
     rng: u32,
     time: f32,
 }
@@ -90,38 +122,218 @@ fn spawn_ember(rng: &mut u32, cx: f32, cy: f32, spread_x: f32, spread_y: f32, li
     }
 }
 
+// The site's own near-black, so the haze starts from the theme and fades up from it.
+fn dusk_theme() -> SkyParams {
+    SkyParams {
+        enabled: true,
+        horizon_glow: 0.3,
+        top_color: [0.010, 0.010, 0.010],
+        horizon_color: [0.012, 0.012, 0.012],
+        bottom_color: [0.010, 0.010, 0.010],
+        horizon_y: 0.52,
+        horizon_width: 0.42,
+    }
+}
+
+fn sky_stop(i: usize) -> SkyParams {
+    match i % 3 {
+        0 => dusk_theme(),
+        1 => dusk_warm(),
+        _ => dusk_violet(),
+    }
+}
+
+fn dusk_warm() -> SkyParams {
+    SkyParams {
+        enabled: true,
+        horizon_glow: 0.9,
+        top_color: [0.010, 0.010, 0.014],
+        horizon_color: [0.14, 0.06, 0.02],
+        bottom_color: [0.016, 0.012, 0.010],
+        horizon_y: 0.52,
+        horizon_width: 0.42,
+    }
+}
+
+fn dusk_violet() -> SkyParams {
+    SkyParams {
+        enabled: true,
+        horizon_glow: 0.7,
+        top_color: [0.014, 0.011, 0.024],
+        horizon_color: [0.10, 0.04, 0.08],
+        bottom_color: [0.014, 0.010, 0.014],
+        horizon_y: 0.46,
+        horizon_width: 0.5,
+    }
+}
+
+fn ember_zones(player_x: f32, player_y: f32) -> [(f32, f32, f32, f32); SPAWN_ZONE_COUNT] {
+    [
+        (320.0, 184.0, 200.0, 12.0),
+        (320.0, 224.0, 70.0, 8.0),
+        (319.0, 114.0, 42.0, 18.0),
+        (player_x, player_y, 30.0, 8.0),
+    ]
+}
+
+const FONT: &[(char, &[&str])] = &[
+    ('u', &["101", "101", "101", "101", "111"]),
+    ('j', &["001", "001", "001", "101", "111"]),
+    ('w', &["101", "101", "101", "111", "111"]),
+    ('a', &["111", "101", "111", "101", "101"]),
+    ('l', &["100", "100", "100", "100", "111"]),
+    ('v', &["101", "101", "101", "101", "010"]),
+    ('i', &["010", "000", "010", "010", "010"]),
+    ('e', &["111", "100", "111", "100", "111"]),
+    ('k', &["101", "110", "100", "110", "101"]),
+    ('.', &["000", "000", "000", "000", "010"]),
+    ('c', &["111", "100", "100", "100", "111"]),
+    ('o', &["111", "101", "101", "101", "111"]),
+    ('m', &["111", "111", "101", "101", "101"]),
+    ('D', &["110", "101", "101", "101", "110"]),
+    ('I', &["111", "010", "010", "010", "111"]),
+    ('R', &["110", "101", "110", "101", "101"]),
+    ('E', &["111", "100", "111", "100", "111"]),
+    ('C', &["111", "100", "100", "100", "111"]),
+    ('T', &["111", "010", "010", "010", "010"]),
+    ('O', &["111", "101", "101", "101", "111"]),
+    ('Y', &["101", "101", "010", "010", "010"]),
+];
+
+fn new_dot(rng: &mut u32, x: f32, y: f32, size: f32, color: [f32; 3]) -> Dot {
+    Dot {
+        x,
+        y,
+        from_x: x + rand_range(rng, -70.0, 70.0),
+        from_y: y - rand_range(rng, 50.0, 190.0),
+        size,
+        delay: (x / W) * 0.6 + rand_range(rng, 0.0, 0.35),
+        phase: rand_range(rng, 0.0, 1.0),
+        color,
+    }
+}
+
+// Lays text out as LEDs, centred on `center_x`. Each font pixel becomes `sub_n` x `sub_n` dots.
+fn push_text(dots: &mut Vec<Dot>, rng: &mut u32, text: &str, center_x: f32, y: f32, block: f32, sub_n: usize, dot: f32, spacing: f32, color: [f32; 3]) {
+    let advance = (3.0 + spacing) * block;
+    let width = text.chars().count() as f32 * advance - spacing * block;
+    let x0 = (center_x - width / 2.0).round();
+    let sub = block / sub_n as f32;
+    for (i, c) in text.chars().enumerate() {
+        let Some((_, glyph)) = FONT.iter().find(|(ch, _)| *ch == c) else { continue };
+        let x_off = x0 + i as f32 * advance;
+        for (cy, row) in glyph.iter().enumerate() {
+            for (cx, bit) in row.chars().enumerate() {
+                if bit != '1' { continue; }
+                for sy in 0..sub_n {
+                    for sx in 0..sub_n {
+                        let px = x_off + cx as f32 * block + sx as f32 * sub + (sub - dot) / 2.0;
+                        let py = y + cy as f32 * block + sy as f32 * sub + (sub - dot) / 2.0;
+                        dots.push(new_dot(rng, px, py, dot, color));
+                    }
+                }
+            }
+        }
+    }
+}
+
+fn push_border(dots: &mut Vec<Dot>, rng: &mut u32, x: f32, y: f32, w: f32, h: f32, color: [f32; 3]) {
+    let step = 3.0;
+    let mut i = 0.0;
+    while i <= w {
+        dots.push(new_dot(rng, x + i, y, 2.0, color));
+        dots.push(new_dot(rng, x + i, y + h - 2.0, 2.0, color));
+        i += step;
+    }
+    let mut j = step;
+    while j < h - 2.0 {
+        dots.push(new_dot(rng, x, y + j, 2.0, color));
+        dots.push(new_dot(rng, x + w - 2.0, y + j, 2.0, color));
+        j += step;
+    }
+}
+
+fn draw_dot(ctx: &mut Context<HeroAction>, d: &Dot, time: f32, sweep_x: f32) {
+    let t = ((time - d.delay) / ASSEMBLE).clamp(0.0, 1.0);
+    if t <= 0.0 { return; }
+    let e = 1.0 - (1.0 - t) * (1.0 - t) * (1.0 - t);
+    let x = d.from_x + (d.x - d.from_x) * e;
+    let y = d.from_y + (d.y - d.from_y) * e;
+    let twinkle = 0.84 + 0.16 * (time * 2.3 + d.phase * TAU).sin();
+    let dx = (d.x - sweep_x) / 24.0;
+    let sweep = (-dx * dx).exp();
+    let lum = twinkle + sweep * 0.7;
+    ctx.draw_rect_layer(
+        RenderLayer::World,
+        Vec2::new(x, y),
+        Vec2::new(d.size, d.size),
+        [(d.color[0] * lum).min(1.0), (d.color[1] * lum).min(1.0), (d.color[2] * lum).min(1.0), t],
+    );
+    let g = d.size * 2.4;
+    let off = (g - d.size) / 2.0;
+    ctx.draw_rect_additive(
+        Vec2::new(x - off, y - off),
+        Vec2::new(g, g),
+        [d.color[0], d.color[1], d.color[2], t * (0.05 + sweep * 0.22)],
+    );
+}
+
 impl GameApp for HeroGame {
     type Action = HeroAction;
     fn internal_resolution() -> (u32, u32) { (640, 360) }
-    fn init(_ctx: &mut Context<HeroAction>) -> Self {
+    fn init(ctx: &mut Context<HeroAction>) -> Self {
+        ctx.show_perf_hud = false;
+        ctx.bloom = BloomSettings { enabled: true, threshold: 0.62, intensity: 0.5, radius: 2.0 };
         let mut rng = 12345u32;
         let player = Player {
             pos: Vec2::new(0.0, 344.0),
             size: Vec2::new(16.0, 16.0),
             velocity: Vec2::new(100.0, 0.0),
         };
-        let ember_init = Ember {
-            origin_x: 0.0, origin_y: 0.0, phase: 0.0, phase_speed: 0.0,
-            drift_x: 0.0, speed: 0.0, size: 2.0, life: 1.0, lifetime: 1.0,
-            r: 1.0, g: 0.6, b: 0.1,
-        };
-        let mut embers = [ember_init; NUM_EMBERS];
-        let zones: [(f32, f32, f32, f32); SPAWN_ZONE_COUNT] = [
-            (210.0, 145.0, 170.0, 40.0),
-            (300.0, 205.0, 120.0, 40.0),
-            (0.0, 340.0, 16.0, 16.0),
-        ];
-        for (i, e) in embers.iter_mut().enumerate() {
-            let zi = i % SPAWN_ZONE_COUNT;
-            let (cx, cy, sx, sy) = zones[zi];
-            let life_offset = i as f32 / NUM_EMBERS as f32;
-            *e = spawn_ember(&mut rng, cx, cy, sx, sy, life_offset);
+        let mut embers = Vec::with_capacity(NUM_EMBERS);
+        let zones = ember_zones(0.0, 340.0);
+        for i in 0..NUM_EMBERS {
+            let (cx, cy, sx, sy) = zones[i % SPAWN_ZONE_COUNT];
+            embers.push(spawn_ember(&mut rng, cx, cy, sx, sy, i as f32 / NUM_EMBERS as f32));
         }
-        HeroGame { player, embers, rng, time: 0.0 }
+        let stars = (0..NUM_STARS)
+            .map(|_| Star {
+                x: rand_range(&mut rng, 0.0, W),
+                y: rand_range(&mut rng, 0.0, H),
+                phase: rand_range(&mut rng, 0.0, 1.0),
+                speed: rand_range(&mut rng, 0.15, 0.7),
+            })
+            .collect();
+        let white = [1.0, 0.96, 0.88];
+        let orange = [1.0, 0.55, 0.12];
+        let grey = [0.62, 0.62, 0.66];
+        let mut dots = Vec::new();
+        push_border(&mut dots, &mut rng, 277.0, 95.0, 84.0, 40.0, [1.0, 0.4, 0.0]);
+        push_text(&mut dots, &mut rng, "u.v", 319.0, 100.0, 6.0, 3, 1.5, 1.5, orange);
+        push_text(&mut dots, &mut rng, "ujjwalvivek.com", 320.0, 164.0, 6.0, 3, 1.5, 1.5, white);
+        push_text(&mut dots, &mut rng, "DIRECTORY", 320.0, 220.0, 3.0, 1, 2.2, 1.5, grey);
+        HeroGame {
+            player,
+            trail: [Vec2::new(0.0, 344.0); TRAIL],
+            trail_head: 0,
+            embers,
+            stars,
+            dots,
+            sky: SkyTransition::new(sky_stop(0), sky_stop(1), 7.0),
+            sky_stage: 0,
+            rng,
+            time: 0.0,
+        }
     }
     fn update(&mut self, ctx: &mut Context<HeroAction>) {
         let dt = ctx.delta_time.min(0.05);
         self.time += dt;
+        self.sky.advance(dt);
+        if self.sky.done() {
+            // theme -> warm haze -> violet dusk -> back to the theme, and around again
+            self.sky_stage = (self.sky_stage + 1) % 3;
+            self.sky = SkyTransition::new(sky_stop(self.sky_stage), sky_stop(self.sky_stage + 1), 8.0);
+        }
         self.player.pos.x += self.player.velocity.x * dt;
         self.player.pos.y = 360.0 - self.player.size.y;
         let max_x = 640.0 - self.player.size.x;
@@ -132,11 +344,9 @@ impl GameApp for HeroGame {
             self.player.pos.x = max_x;
             self.player.velocity.x = -self.player.velocity.x.abs();
         }
-        let zones: [(f32, f32, f32, f32); SPAWN_ZONE_COUNT] = [
-            (210.0, 145.0, 170.0, 40.0),
-            (300.0, 205.0, 120.0, 40.0),
-            (self.player.pos.x + self.player.size.x / 2.0, self.player.pos.y, 30.0, 8.0),
-        ];
+        self.trail[self.trail_head] = self.player.pos;
+        self.trail_head = (self.trail_head + 1) % TRAIL;
+        let zones = ember_zones(self.player.pos.x + self.player.size.x / 2.0, self.player.pos.y);
         for e in self.embers.iter_mut() {
             e.life += dt / e.lifetime;
             if e.life >= 1.0 {
@@ -148,14 +358,26 @@ impl GameApp for HeroGame {
         }
     }
     fn render(&mut self, ctx: &mut Context<HeroAction>) {
+        for s in &self.stars {
+            let a = 0.10 + 0.32 * (0.5 + 0.5 * (self.time * s.speed * TAU + s.phase * TAU).sin());
+            ctx.draw_rect_layer(RenderLayer::Background, Vec2::new(s.x, s.y), Vec2::new(1.0, 1.0), [0.65, 0.65, 0.75, a]);
+        }
+        // light band that sweeps over the wordmark once everything has landed, then rests
+        let sweep_x = if self.time < ASSEMBLE + 1.2 { -1000.0 } else { -60.0 + ((self.time - ASSEMBLE - 1.2) * 110.0) % 900.0 };
+        for d in &self.dots {
+            draw_dot(ctx, d, self.time, sweep_x);
+        }
         ctx.draw_rect(self.player.pos, self.player.size, [0.8, 0.8, 0.8, 1.0]);
-        ctx.draw_rect(Vec2::new(282.0, 96.0), Vec2::new(74.0, 2.0), [1.0, 0.4, 0.0, 1.0]);
-        ctx.draw_rect(Vec2::new(282.0, 131.0), Vec2::new(74.0, 2.0), [1.0, 0.4, 0.0, 1.0]);
-        ctx.draw_rect(Vec2::new(282.0, 96.0), Vec2::new(2.0, 37.0), [1.0, 0.4, 0.0, 1.0]);
-        ctx.draw_rect(Vec2::new(354.0, 96.0), Vec2::new(2.0, 37.0), [1.0, 0.4, 0.0, 1.0]);
-        draw_text(ctx, "u.v", Vec2::new(286.0, 100.0), [1.0, 0.6, 0.1, 1.0], 5.0, 1.5);
-        draw_text(ctx, "ujjwalvivek.com", Vec2::new(151.0, 170.0), [1.0, 1.0, 1.0, 1.0], 5.0, 1.5);
-        draw_text(ctx, "DIRECTORY", Vec2::new(259.0, 220.0), [0.7, 0.7, 0.7, 1.0], 3.0, 1.5);
+        for i in 0..TRAIL {
+            let p = self.trail[(self.trail_head + i) % TRAIL];
+            let f = (i + 1) as f32 / TRAIL as f32;
+            let s = self.player.size.x * (0.35 + 0.65 * f);
+            ctx.draw_rect_additive(
+                Vec2::new(p.x + (self.player.size.x - s) / 2.0, p.y + (self.player.size.y - s) / 2.0),
+                Vec2::new(s, s),
+                [1.0, 0.5, 0.1, 0.16 * f * f],
+            );
+        }
         for e in &self.embers {
             let t = e.life;
             let wobble = (t * e.phase_speed * TAU + e.phase * TAU).sin() * 12.0;
@@ -165,7 +387,7 @@ impl GameApp for HeroGame {
             let fade_out = ((1.0 - t) * 3.0).min(1.0);
             let alpha = fade_in * fade_out * 0.75;
             let s = e.size * (1.0 - t * 0.2);
-            ctx.draw_rect(Vec2::new(x, y), Vec2::new(s, s), [e.r, e.g, e.b, alpha]);
+            ctx.draw_rect_additive(Vec2::new(x, y), Vec2::new(s, s), [e.r, e.g, e.b, alpha]);
         }
     }
     fn ui(
@@ -175,54 +397,10 @@ impl GameApp for HeroGame {
         scene_params: &mut engine::SceneParams,
     ) {
         scene_params.background_color = [0.04, 0.04, 0.04];
-        scene_params.fog_color = [0.08, 0.08, 0.08];
+        scene_params.sky = self.sky.lerp();
+        scene_params.fog_color = [0.10, 0.06, 0.04];
         scene_params.fog_density = 8.0;
-        scene_params.fog_opacity = 0.7;
-    }
-}
-
-fn draw_text(ctx: &mut Context<HeroAction>, text: &str, start: Vec2, color: [f32; 4], block_size: f32, spacing: f32) {
-    let font: &[(char, &[&str])] = &[
-        ('u', &["101", "101", "101", "101", "111"]),
-        ('j', &["001", "001", "001", "101", "111"]),
-        ('w', &["101", "101", "101", "111", "111"]),
-        ('a', &["111", "101", "111", "101", "101"]),
-        ('l', &["100", "100", "100", "100", "111"]),
-        ('v', &["101", "101", "101", "101", "010"]),
-        ('i', &["010", "000", "010", "010", "010"]),
-        ('e', &["111", "100", "111", "100", "111"]),
-        ('k', &["101", "110", "100", "110", "101"]),
-        ('.', &["000", "000", "000", "000", "010"]),
-        ('c', &["111", "100", "100", "100", "111"]),
-        ('o', &["111", "101", "101", "101", "111"]),
-        ('m', &["111", "111", "101", "101", "101"]),
-        ('D', &["110", "101", "101", "101", "110"]),
-        ('I', &["111", "010", "010", "010", "111"]),
-        ('R', &["110", "101", "110", "101", "101"]),
-        ('E', &["111", "100", "111", "100", "111"]),
-        ('C', &["111", "100", "100", "100", "111"]),
-        ('T', &["111", "010", "010", "010", "010"]),
-        ('O', &["111", "101", "101", "101", "111"]),
-        ('Y', &["101", "101", "010", "010", "010"]),
-    ];
-    let mut x_offset = start.x;
-    for c in text.chars() {
-        if let Some((_, glyph)) = font.iter().find(|(ch, _)| *ch == c) {
-            for (y, row) in glyph.iter().enumerate() {
-                for (x, bit) in row.chars().enumerate() {
-                    if bit == '1' {
-                        let center = Vec2::new(
-                            x_offset + (x as f32) * block_size + block_size / 2.0,
-                            start.y + (y as f32) * block_size + block_size / 2.0
-                        );
-                        ctx.draw_rect(center, Vec2::new(block_size, block_size), color);
-                    }
-                }
-            }
-            x_offset += 3.0 * block_size + spacing * block_size;
-        } else {
-            x_offset += 2.0 * block_size + spacing * block_size;
-        }
+        scene_params.fog_opacity = 0.45;
     }
 }
 
@@ -446,5 +624,4 @@ impl AudioEngine {
 #[wasm_bindgen(start)]
 pub fn wasm_main() {
     engine::run_wasm::<HeroGame>();
-    clicker::init_clicker("#clicker-mount");
 }
