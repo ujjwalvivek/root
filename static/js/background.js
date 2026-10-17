@@ -32,18 +32,6 @@ const layers = [
     { name: "city-skyline", opacity: 0.25, speed: 2, density: 3, params: { buildingCount: 15, windowDensity: 0.5, horizon: -1, color: "background", waterDepth: 0 } },
 ];
 
-// The Canvas2D engine only has the classic primitives, so without WebGPU the page keeps the original scene.
-function classicLayers(mobile) {
-    const slow = { speed: 0.05, density: 1, params: {} };
-    return [
-        { name: "background", opacity: 0.8, ...slow },
-        { name: "grid", opacity: 1.0, ...slow, params: { spacing: 100, warpAmount: 10 } },
-        { name: "wireframes", opacity: 0.5, ...slow, density: mobile ? 0.6 : 1.0 },
-        { name: "particles", opacity: 0.25, ...slow },
-        { name: "vignette", opacity: 0.9, ...slow, params: { innerRadius: 0.3, outerRadius: 1.2 } },
-    ];
-}
-
 function mount() {
     const cv = document.createElement("canvas");
     cv.id = "bg-canvas";
@@ -67,24 +55,16 @@ function toScene(engine, stack) {
     })));
 }
 
-// Resolves to "gpu" or "cpu" depending on which engine ended up drawing.
+// Needs WebGPU. Without it the canvas is dropped and the CSS placeholder (glow and dot grid) stays as the backdrop.
 export async function startBackground() {
-    const mobile = /Mobi|Android|iPhone|iPad|iPod|webOS|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
-    let cv = mount();
+    const cv = mount();
     try {
         const gpu = await import(`${SUBSTRATE}/index.js`);
         renderer = await gpu.loop(cv, toScene(gpu, layers), palette, { fps: FPS });
         setBackgroundViolet(violet);
         reveal(cv);
-        return "gpu";
     } catch (err) {
-        console.warn("WebGPU background unavailable, using Canvas2D:", err);
-        // A canvas that already handed out a webgpu context cannot give a 2d one, so start from a fresh element.
+        console.warn("WebGPU background unavailable, keeping the CSS backdrop:", err);
         cv.remove();
-        cv = mount();
-        const cpu = await import(`${SUBSTRATE}/cpu.js`);
-        cpu.loop(cv, toScene(cpu, classicLayers(mobile)), palette, { fps: FPS });
-        reveal(cv);
-        return "cpu";
     }
 }
