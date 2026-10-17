@@ -411,8 +411,35 @@ body.bg-ready::before {
     min-height: 458px;
 }
 
+.mail-host:not(.is-mounted) {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    border: 2px solid rgba(var(--accent-rgb), 0.3);
+    color: #64748b;
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+}
+
+.mail-host:not(.is-mounted)::before {
+    content: attr(data-status) "...";
+    animation: mail-wait 1.4s ease-in-out infinite;
+}
+
+@keyframes mail-wait {
+    0%, 100% { opacity: 0.45; }
+    50% { opacity: 1; }
+}
+
 .mail-host.is-mounted {
     min-height: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .mail-host:not(.is-mounted)::before {
+        animation: none;
+    }
 }
 
 @media (max-width: 700px) {

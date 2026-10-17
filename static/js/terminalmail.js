@@ -63,17 +63,6 @@ function el(tag, className, text) {
     return node;
 }
 
-function loadStyles() {
-    return new Promise((resolve) => {
-        if (document.querySelector('link[data-terminalmail]')) return resolve();
-        const link = el("link");
-        link.rel = "stylesheet";
-        link.href = "/css/terminalmail.css";
-        link.dataset.terminalmail = "";
-        link.onload = link.onerror = () => resolve();
-        document.head.appendChild(link);
-    });
-}
 
 let turnstileScript = null;
 function loadTurnstile() {
@@ -594,8 +583,8 @@ function startCat(canvas, scope) {
     return () => { alive = false; clearTimeout(frameTimer); clearInterval(colorTimer); observer.disconnect(); probe.remove(); };
 }
 
-export async function mountTerminalMail(host) {
-    await loadStyles();
+// The page loads /css/terminalmail.css alongside this module (see main.js) before it calls this.
+export function mountTerminalMail(host) {
     const mail = new TerminalMail(host);
     host.classList.add("is-mounted");
     return mail;

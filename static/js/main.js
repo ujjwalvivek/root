@@ -416,7 +416,8 @@ links.forEach((link) => {
     actions.appendChild(buildRow(link.title, link.url, nodes, link));
 });
 dash.appendChild(actions);
-// Terminal mail sits under the list. Its code and styles are only fetched once it is close to the visible area.
+// Terminal mail sits under the list. Its code and styles are fetched while the page is idle, so scrolling down finds them
+// already loaded instead of starting a chain of two requests (module, then stylesheet) at the moment they are needed.
 const mailSection = document.createElement("div");
 mailSection.className = "mail-section";
 const mailHeader = document.createElement("div");
@@ -424,15 +425,35 @@ mailHeader.className = "dashboard-header";
 mailHeader.innerHTML = `<span class="prompt">root@ujjwalvivek:~$</span> mail`;
 const mailHost = document.createElement("div");
 mailHost.className = "mail-host";
+mailHost.dataset.status = "establishing encrypted connection";
 mailSection.append(mailHeader, mailHost);
 dash.appendChild(mailSection);
+// The module and its stylesheet are requested together, so there is one round trip to wait for and not two in a row.
+let mailModule = null;
+const loadMail = () => (mailModule ??= Promise.all([
+    import("./terminalmail.js"),
+    new Promise((resolve) => {
+        const link = document.createElement("link");
+        link.rel = "stylesheet";
+        link.href = "/css/terminalmail.css";
+        link.onload = link.onerror = () => resolve();
+        document.head.appendChild(link);
+    }),
+]).then(([mod]) => mod));
+// Held back until the first screen has settled (fonts, game and wallpaper), so it never competes with them.
+const MAIL_PREFETCH_DELAY_MS = 3500;
+setTimeout(() => {
+    const warm = () => loadMail().catch(() => { });
+    if ("requestIdleCallback" in window) requestIdleCallback(warm, { timeout: 3000 });
+    else warm();
+}, MAIL_PREFETCH_DELAY_MS);
 new IntersectionObserver((entries, observer) => {
     if (!entries.some((entry) => entry.isIntersecting)) return;
     observer.disconnect();
-    import("./terminalmail.js")
+    loadMail()
         .then((mod) => mod.mountTerminalMail(mailHost))
         .catch((err) => console.error("Terminal mail failed to load:", err));
-}, { root: container, rootMargin: "400px 0px" }).observe(mailSection);
+}, { root: container, rootMargin: "500px 0px" }).observe(mailSection);
 // The custom cursor is only for devices with a real pointer, and it waits until the page is idle.
 if (matchMedia("(hover: hover) and (pointer: fine)").matches) {
     const startCursor = () => import("./cursor.js").then((mod) => mod.startCursor()).catch((err) => console.error("Cursor failed to load:", err));
