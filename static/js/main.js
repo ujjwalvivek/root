@@ -408,9 +408,6 @@ links.forEach((link) => {
 });
 dash.appendChild(actions);
 container.appendChild(dash);
-const clickerMount = document.createElement("div");
-clickerMount.id = "clicker-mount";
-container.appendChild(clickerMount);
 body.appendChild(container);
 if (window.location.protocol !== "https:" && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1") {
     try {

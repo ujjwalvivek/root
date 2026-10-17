@@ -627,81 +627,8 @@ body.bg-ready::before {
     }
 }
 
-.clicker-box {
-    margin-top: 0.75rem;
-    padding: 1rem 1rem;
-    background: rgba(var(--accent-rgb), 0.1);
-    border: 2px dashed rgba(255, 255, 255, 0.08);
-    animation: fade 0.5s ease-out 0.4s both;
-    max-width: 1000px;
-    margin-left: auto;
-    margin-right: auto;
-}
-
-.clicker-row {
-    display: flex;
-    align-items: stretch;
-    justify-content: space-between;
-    gap: 1rem;
-}
-
-.clicker-info {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-    min-width: 0;
-    cursor: default;
-}
-
-.clicker-line {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 0.85rem;
-    color: #94a3b8;
-}
-
-.clicker-score {
-    font-size: 1.75rem;
-    font-weight: 700;
-    color: var(--accent);
-    font-family: "Monaspace Neon", monospace;
-    text-shadow: 0 0 12px rgba(var(--accent-rgb), 0.5);
-    letter-spacing: 0.04em;
-    line-height: 1.2;
-    padding: 0.15rem 0;
-}
-
-.clicker-btn {
-    background: transparent;
-    border: 2px solid rgba(var(--accent-rgb), 0.5);
-    color: var(--accent);
-    font-family: "Monaspace Neon", monospace;
-    font-size: 0.8rem;
-    font-weight: 800;
-    padding: 0.3rem 0.9rem;
-    cursor: pointer;
-    transition: all 0.2s, transform 0.1s ease;
-    text-transform: uppercase;
-    letter-spacing: 0.25em;
-    flex-shrink: 0;
-}
-
-.clicker-btn:hover {
-    background: rgba(var(--accent-rgb), 0.08);
-    border-color: rgba(var(--accent-rgb), 0.6);
-}
-
-.clicker-btn:active {
-    transform: scale(0.97);
-}
-
 @media (max-width: 1000px) {
     .dashboard-row:hover {
         background-color: transparent;
-    }
-
-    .clicker-score {
-        font-size: 1.5rem;
     }
 }
