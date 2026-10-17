@@ -110,25 +110,31 @@ function setVisitors(n) {
     visitors = n;
     if (typed) subtitle.textContent = headline(n);
 }
-let textToType = headline(null);
-let typeIndex = 0;
-function typeWriter() {
-    if (typeIndex < textToType.length) {
-        subtitle.textContent += textToType.charAt(typeIndex);
-        typeIndex++;
-        setTimeout(typeWriter, 40 + Math.random() * 40);
-    } else {
-        typed = true;
-        subtitle.textContent = headline(visitors);
-        hint.classList.add("is-visible");
-    }
+// The headline starts typing straight away. The number is added once it is known, so nothing waits on the network.
+countReady.then((n) => { if (n != null && visitors == null) visitors = n; });
+function typeInto(text, done) {
+    let i = 0;
+    (function step() {
+        if (i < text.length) {
+            subtitle.textContent += text.charAt(i++);
+            setTimeout(step, 40 + Math.random() * 40);
+        } else done();
+    })();
 }
-setTimeout(async () => {
-    const n = await Promise.race([countReady, new Promise((r) => setTimeout(() => r(null), 1500))]);
-    if (n != null) visitors = n;
-    textToType = headline(visitors);
-    typeWriter();
-}, 800);
+function finishHeadline() {
+    typed = true;
+    subtitle.textContent = headline(visitors);
+    hint.classList.add("is-visible");
+}
+setTimeout(() => {
+    const base = headline(null);
+    typeInto(base, async () => {
+        const n = visitors ?? await Promise.race([countReady, new Promise((r) => setTimeout(() => r(null), 1200))]);
+        if (n == null) return finishHeadline();
+        visitors = n;
+        typeInto(headline(n).slice(base.length), finishHeadline);
+    });
+}, 150);
 const CLICK_API = "https://echopoint.ujjwalvivek.com/v1/click";
 setInterval(() => {
     if (document.hidden) return;
