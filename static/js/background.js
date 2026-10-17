@@ -1,6 +1,6 @@
 // Page background: a fixed substrate v2 stack on the WebGPU engine.
 // To try other wallpapers and stacks, use the lab in tools/substrate and paste its "copy json" output into `layers`.
-const SUBSTRATE = "https://cdn.jsdelivr.net/npm/@ujjwalvivek/substrate@2.0.1/dist";
+const SUBSTRATE = "https://cdn.jsdelivr.net/npm/@ujjwalvivek/substrate@2.0.2/dist";
 const FPS = 30;
 const warm = { primary: "#404040", secondary: "#808080", accent: "#ffaa00", background: "#030303" };
 const dusk = { primary: "#3d3752", secondary: "#7f78a0", accent: "#b794ff", background: "#040309" };

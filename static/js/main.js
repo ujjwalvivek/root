@@ -431,10 +431,11 @@ if (window.location.protocol !== "https:" && window.location.hostname !== "local
     };
     if (navigator.gpu) navigator.gpu.requestAdapter = () => Promise.resolve(null);
 }
-// The wallpaper compiles several shaders at once, which stalls frames while the game is still assembling the wordmark.
-// Hold it back until the game canvas is up and the dots have landed; if the game never shows, start it anyway.
-const WORDMARK_SETTLE_MS = 2400;
-const WALLPAPER_MAX_WAIT_MS = 6000;
+// The wallpaper's shaders now compile off the main thread (substrate 2.0.2), so it no longer has to wait for the dots to land.
+// A short hold after the game canvas appears lets the first dots start falling before it begins; if the game never shows,
+// it starts anyway after WALLPAPER_MAX_WAIT_MS.
+const WORDMARK_SETTLE_MS = 333;
+const WALLPAPER_MAX_WAIT_MS = 2333;
 function wordmarkSettled() {
     return new Promise((resolve) => {
         const t0 = performance.now();
