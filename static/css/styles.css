@@ -579,6 +579,7 @@ body.bg-ready::before {
 }
 
 .row-icon {
+    overflow: visible;
     color: #475569;
     flex-shrink: 0;
     transition:

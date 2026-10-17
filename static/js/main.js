@@ -1,5 +1,6 @@
 import { startBackground, setBackgroundViolet } from "./background.js";
 import { links } from "./projects.js";
+import { langIcons } from "./langicons.js";
 function installGlobal(name, value) {
   if (typeof globalThis[name] === "function") return;
   try {
@@ -392,6 +393,78 @@ function releaseInfo(repo) {
   }
   return releases.get(repo);
 }
+// The dominant language of a row's repo, from echopoint's per-repo language bytes (a tiny record); its icon replaces the row's link icon. The
+// answer is kept in the browser, so a return visit draws the icons with the rows; an entry older than a day is used as it is and refreshed in
+// the background for the next visit. Only a repo with no entry at all is fetched, and its icon swaps in when the answer arrives.
+const LANG_CACHE_KEY = "root:langs";
+const LANG_TTL_MS = 864e5;
+const LANG_WAIT_MS = 1500;
+let langCache = {};
+try {
+  langCache = JSON.parse(localStorage.getItem(LANG_CACHE_KEY) || "{}");
+} catch (_) {}
+const langRequests = new Map();
+function langInfo(repo) {
+  if (!langRequests.has(repo)) {
+    langRequests.set(
+      repo,
+      fetch(`${EP}/v1/store/github:${repo}:langs`)
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => {
+          const ranked = Object.entries(d || {})
+            .filter(([, bytes]) => bytes > 0)
+            .sort((a, b) => b[1] - a[1]);
+          if (!ranked.length) return null;
+          const total = ranked.reduce((sum, [, bytes]) => sum + bytes, 0);
+          const info = {
+            l: ranked[0][0],
+            p: Math.round((100 * ranked[0][1]) / total),
+            t: Date.now(),
+          };
+          langCache[repo] = info;
+          try {
+            localStorage.setItem(LANG_CACHE_KEY, JSON.stringify(langCache));
+          } catch (_) {}
+          return info;
+        })
+        .catch(() => null),
+    );
+  }
+  return langRequests.get(repo);
+}
+// The repo a row stands for: the one its license names, else its release, else its stars badge. Rows with none (itch, steam) have no language.
+// The rows are sorted by each language's share of all the code, from the same /v1/langs data as the language chart under the list.
+const RANK_CACHE_KEY = "root:langrank";
+let rankCache = null;
+try {
+  rankCache = JSON.parse(localStorage.getItem(RANK_CACHE_KEY) || "null");
+} catch (_) {}
+function langRank() {
+  return fetch(`${EP}/v1/langs`)
+    .then((r) => (r.ok ? r.json() : null))
+    .then((bytes) => {
+      if (bytes && typeof bytes === "object") {
+        rankCache = { bytes, t: Date.now() };
+        try {
+          localStorage.setItem(RANK_CACHE_KEY, JSON.stringify(rankCache));
+        } catch (_) {}
+      }
+      return rankCache;
+    })
+    .catch(() => rankCache);
+}
+const SITE_ICONS = [
+  ["itch.io", "itch.io"],
+  ["steampowered.com", "Steam"],
+];
+function rowRepo(link) {
+  return (
+    [].concat(link.license || [])[0]?.repo ||
+    link.release ||
+    (link.badges || []).find((b) => b.kind === "stars")?.repo ||
+    null
+  );
+}
 function ageLabel(days) {
   if (days < 1) return "today";
   if (days < 30) return `${Math.floor(days)}d`;
@@ -468,6 +541,30 @@ function buildRow(title, url, nodes, link) {
   );
   iconSvg.appendChild(iconPath);
   linkGroup.appendChild(iconSvg);
+  // A repo's dominant language replaces the link icon (same size and colour). A row with no repo gets the mark of its site (itch.io, Steam),
+  // and anything with no icon keeps the link icon.
+  const repo = link && rowRepo(link);
+  const site = link && SITE_ICONS.find(([host]) => new URL(link.url).hostname.endsWith(host));
+  if (repo || site) {
+    const paint = (info) => {
+      const glyph = langIcons[info.l];
+      if (!glyph) return;
+      iconPath.setAttribute("d", glyph[0]);
+      iconPath.setAttribute("transform", glyph[1]);
+      iconSvg.setAttribute("role", "img");
+      iconSvg.querySelector("title")?.remove();
+      const label = document.createElementNS("http://www.w3.org/2000/svg", "title");
+      label.textContent = info.l;
+      iconSvg.prepend(label);
+    };
+    if (!repo) paint({ l: site[1] });
+    else {
+      const known = langCache[repo];
+      if (known) paint(known);
+      else langInfo(repo).then((info) => info && paint(info));
+      if (Date.now() - (known?.t || 0) > LANG_TTL_MS) langInfo(repo);
+    }
+  }
   const textLink = document.createElement("a");
   textLink.href = url;
   textLink.className = "hover-link text-link";
@@ -556,6 +653,7 @@ const badgeLoader =
         { root: container, rootMargin: "100px 0px" },
       )
     : null;
+const listRows = [];
 links.forEach((link) => {
   const nodes = (link.badges || []).map((badge) => {
     const { img, href } = badgeFor(badge);
@@ -591,7 +689,11 @@ links.forEach((link) => {
     else b.src = img;
     return a;
   });
-  actions.appendChild(buildRow(link.title, link.url, nodes, link));
+  listRows.push({
+    pinned: Boolean(link.pin),
+    repo: rowRepo(link),
+    row: buildRow(link.title, link.url, nodes, link),
+  });
 });
 dash.appendChild(actions);
 // Everything under the list is built lazily: a git summary and the mail terminal. Each section's code
