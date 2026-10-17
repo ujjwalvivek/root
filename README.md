@@ -12,7 +12,7 @@ Honestly, a "**Link**"tree, but nicer. Website uses `Zola` under the hood, depen
 
 ```sh
 cd game
-wasm-pack build --target web --out-dir ../public/game
+wasm-pack build --target web --out-name game --out-dir ../static/game
 cd ..
 zola serve --interface [IP_ADDRESS] # 0.0.0.0 --port 1111
 ```
