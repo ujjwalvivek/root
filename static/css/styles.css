@@ -1,7 +1,8 @@
+/* Monaspace Neon (SIL OFL 1.1), cut down to the weights (300-800) and characters this page uses: 28 KB instead of 275 KB. */
 @font-face {
     font-family: "Monaspace Neon";
-    src: url("https://cdn.ujjwalvivek.com/fonts/Monaspace/Neon/Var.woff2") format("woff2");
-    font-weight: 100 900;
+    src: url("/fonts/neon-latin.woff2") format("woff2");
+    font-weight: 300 800;
     font-style: normal;
 }
 

@@ -13,11 +13,15 @@
         <link rel="preconnect" href="https://cdn.ujjwalvivek.com" crossorigin />
         <link
             rel="preload"
-            href="https://cdn.ujjwalvivek.com/fonts/Monaspace/Neon/Var.woff2"
+            href="/fonts/neon-latin.woff2"
             as="font"
             type="font/woff2"
             crossorigin
         />
+        <!-- The module graph is main.js -> projects.js + background.js; fetching all three at once avoids a round trip per level. -->
+        <link rel="modulepreload" href="/js/main.js" />
+        <link rel="modulepreload" href="/js/projects.js" />
+        <link rel="modulepreload" href="/js/background.js" />
         <link rel="stylesheet" href="/css/styles.css" />
     </head>
     <body>
