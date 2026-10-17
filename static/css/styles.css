@@ -503,9 +503,36 @@ body.bg-ready::before {
     color: #f8fafc;
 }
 
+/* While the release loads its text is invisible (it only holds the space) and a small amber spinner sits where the version will appear. */
 .meta-release.is-pending {
-    visibility: hidden;
+    position: relative;
     pointer-events: none;
+}
+
+.meta-release.is-pending .ver,
+.meta-release.is-pending .age {
+    color: transparent;
+}
+
+.meta-release.is-pending::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 50%;
+    width: 8px;
+    height: 8px;
+    margin-top: -4px;
+    box-sizing: border-box;
+    border: 2px solid rgba(var(--accent-rgb), 0.28);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .meta-release.is-pending::before {
+        animation-duration: 2.4s;
+    }
 }
 
 .meta-release .ver {
