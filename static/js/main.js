@@ -97,8 +97,7 @@ hint.textContent = "click to be counted";
 heroText.appendChild(hint);
 container.appendChild(heroText);
 
-// "ROOT ACCESS GRANTED TO 7,337 STRANGERS": the number is the global click count from echopoint, the same one the
-// clicker box shows. It is read up front (a tiny request, well before the game loads) and then follows the clicker live.
+// (a tiny request, well before the game loads) and refreshed once a minute while the tab is visible.
 let visitors = null;
 let typed = false;
 const headline = (n) => (n == null ? "ROOT ACCESS GRANTED" : `ROOT ACCESS GRANTED TO ${n.toLocaleString("en-US")} ${n === 1 ? "STRANGER" : "STRANGERS"}`);
@@ -130,24 +129,62 @@ setTimeout(async () => {
     textToType = headline(visitors);
     typeWriter();
 }, 800);
-// Once the clicker box exists, mirror its number so the headline moves when anyone clicks.
-new MutationObserver(() => {
-    const el = document.getElementById("globalClickScore");
-    const digits = el && el.textContent.replace(/\D/g, "");
-    if (digits) setVisitors(Number(digits));
-}).observe(container, { childList: true, subtree: true, characterData: true });
-// Clicking the hint is the same as pressing CLICK ME; before the game has loaded it posts the click itself.
-let hintTimer = 0;
+const CLICK_API = "https://echopoint.ujjwalvivek.com/v1/click";
+setInterval(() => {
+    if (document.hidden) return;
+    fetch(CLICK_API).then((r) => (r.ok ? r.json() : null)).then((d) => { if (d && Number.isFinite(d.global)) setVisitors(Math.max(d.global, visitors ?? 0)); }).catch(() => { });
+}, 60000);
+
+// Clicking the hint adds one to the global count, every time. A streak of fast clicks makes the line below get less
+// patient: the wording escalates, the text shakes harder and turns from slate to amber to red. After a couple of idle
+// seconds it calms down and goes back to the original line.
+const HINT_IDLE = "click to be counted";
+const HINT_LINES = [
+    "counted", "counted again", "yes, that one counted too", "you can stop now", "stop", "this is not a game",
+    "it is a little bit a game", "please", "STOP.", "I SAID STOP", "YOUR FINGER IS FINE", "THERE ARE STRANGERS WAITING",
+    "LOOK AT THE NUMBER", "YOU DID THAT", "THAT IS ONE PERSON", "ROOT HAS NOTICED", "ROOT IS WATCHING", "NOT FUNNY",
+    "STOP CLICKING", "OKAY. KEEP GOING THEN", "...i give up",
+];
+const HINT_TAIL = ["still counting", "you are very persistent", "nobody asked for this", "root remembers", "this is your fault", "COUNTED. AGAIN."];
+let streak = 0;
+let calmTimer = 0;
+function calmDown() {
+    streak = 0;
+    hint.classList.remove("is-shaking");
+    hint.removeAttribute("data-heat");
+    subtitle.classList.remove("is-rattled");
+    hint.textContent = HINT_IDLE;
+}
+// Clicks are sent in bursts, not one request each.
+let pendingClicks = 0;
+let flushTimer = 0;
+function queueClick() {
+    pendingClicks++;
+    clearTimeout(flushTimer);
+    flushTimer = setTimeout(() => {
+        const count = pendingClicks;
+        pendingClicks = 0;
+        fetch(CLICK_API, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ type: "click", count }) }).catch(() => { });
+    }, 400);
+}
 function countMe() {
-    const btn = document.getElementById("globalClickBtn");
-    if (btn) btn.click();
-    else {
-        fetch("https://echopoint.ujjwalvivek.com/v1/click", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ type: "click", count: 1 }) }).catch(() => { });
-        setVisitors((visitors ?? 0) + 1);
+    queueClick();
+    setVisitors((visitors ?? 0) + 1);
+    if (window.playUISound) window.playUISound("click");
+    streak++;
+    hint.textContent = streak <= HINT_LINES.length ? HINT_LINES[streak - 1] : HINT_TAIL[Math.floor(Math.random() * HINT_TAIL.length)];
+    const heat = streak >= 15 ? 3 : streak >= 9 ? 2 : streak >= 4 ? 1 : 0;
+    if (heat) {
+        hint.dataset.heat = heat;
+        hint.style.setProperty("--amp", `${Math.min(0.5 + streak * 0.3, 6).toFixed(2)}px`);
+        hint.style.setProperty("--shake", `${Math.max(0.05, 0.14 - streak * 0.004).toFixed(3)}s`);
+        hint.classList.remove("is-shaking");
+        void hint.offsetWidth;
+        hint.classList.add("is-shaking");
     }
-    hint.textContent = "counted";
-    clearTimeout(hintTimer);
-    hintTimer = setTimeout(() => { hint.textContent = "click to be counted"; }, 1500);
+    subtitle.classList.toggle("is-rattled", heat >= 2);
+    clearTimeout(calmTimer);
+    calmTimer = setTimeout(calmDown, 2400);
 }
 hint.addEventListener("click", (e) => { e.stopPropagation(); countMe(); });
 hint.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); countMe(); } });

@@ -210,6 +210,49 @@ body.bg-ready::before {
     outline: none;
 }
 
+/* A streak of clicks turns the line from slate to amber to red and shakes it harder. */
+.hero-text .hero-hint[data-heat="1"] {
+    color: var(--accent);
+}
+
+.hero-text .hero-hint[data-heat="2"] {
+    color: #ff7a59;
+    font-weight: 700;
+    letter-spacing: 0.22em;
+}
+
+.hero-text .hero-hint[data-heat="3"] {
+    color: #ff4d4d;
+    font-weight: 800;
+    letter-spacing: 0.26em;
+    text-shadow: 0 0 12px rgba(255, 77, 77, 0.6);
+}
+
+.hero-text .hero-hint.is-shaking {
+    animation: hint-shake var(--shake, 0.12s) linear infinite;
+}
+
+.hero-subtitle.is-rattled {
+    animation: hint-shake 0.1s linear infinite;
+    --amp: 1.2px;
+}
+
+@keyframes hint-shake {
+    0% { transform: translate(0, 0); }
+    20% { transform: translate(calc(var(--amp, 1px) * -1), calc(var(--amp, 1px) * 0.5)); }
+    40% { transform: translate(var(--amp, 1px), calc(var(--amp, 1px) * -0.5)); }
+    60% { transform: translate(calc(var(--amp, 1px) * -0.6), calc(var(--amp, 1px) * -0.4)); }
+    80% { transform: translate(calc(var(--amp, 1px) * 0.6), calc(var(--amp, 1px) * 0.5)); }
+    100% { transform: translate(0, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .hero-text .hero-hint.is-shaking,
+    .hero-subtitle.is-rattled {
+        animation: none;
+    }
+}
+
 @keyframes blink {
     50% {
         opacity: 0;
