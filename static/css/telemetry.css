@@ -1,0 +1,512 @@
+/* Profile telemetry. Loaded on demand with telemetry.js. Every colour comes from the page accent, so it follows the amber and violet theme. */
+.tl {
+    position: relative;
+    z-index: 10;
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 1000px;
+    border: 2px dashed rgba(255, 255, 255, 0.05);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+    background: #0a0a0a;
+    color: #e2e8f0;
+    text-align: left;
+}
+
+/* The same frame as the game scene: the top two brackets sit on the host (like the hero's wrapper), the bottom two on the block. */
+.lazy-host.is-framed {
+    position: relative;
+}
+
+.lazy-host.is-framed::before,
+.lazy-host.is-framed::after,
+.tl::before,
+.tl::after {
+    content: "";
+    position: absolute;
+    z-index: 20;
+    width: 16px;
+    height: 16px;
+    border-color: rgba(var(--accent-rgb), 1);
+    border-style: solid;
+    pointer-events: none;
+}
+
+.lazy-host.is-framed::before { top: 0; left: 0; border-width: 2px 0 0 2px; }
+.lazy-host.is-framed::after { top: 0; right: 0; border-width: 2px 2px 0 0; }
+.tl::before { bottom: -1px; left: -1px; border-width: 0 0 2px 2px; }
+.tl::after { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; }
+
+.tl {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 16px 18px 18px;
+}
+
+.tl-stats {
+    position: relative;
+    z-index: 6; /* above the scanlines, so the readout stays bright */
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+/* readout columns split by dotted rules, like the columns of a terminal, with no boxes around them */
+.tl-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    min-width: 0;
+    padding: 2px 16px;
+    border-left: 1px dotted rgba(var(--accent-rgb), 0.4);
+}
+
+.tl-stat:first-child {
+    padding-left: 0;
+    border-left: 0;
+}
+
+.tl-label {
+    color: #94a3b8;
+    font-size: 0.66rem;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+.tl-read {
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+}
+
+.tl-led {
+    display: block;
+    height: 30px;
+    width: auto;
+    overflow: visible;
+    /* a warm core with a wide, soft halo: the same restraint as the bloom around the dots in the game */
+    fill: color-mix(in srgb, var(--amber-lite) 55%, var(--accent));
+    filter: drop-shadow(0 0 7px rgba(var(--accent-rgb), 0.45));
+    shape-rendering: crispEdges;
+}
+
+.tl-led rect {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: tl-boot 0.4s ease-out backwards;
+    animation-delay: var(--d, 0ms);
+}
+
+.tl-unit {
+    padding-bottom: 1px;
+    color: #94a3b8;
+    font-size: 0.62rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+}
+
+.tl-note {
+    color: #64748b;
+    font-size: 0.62rem;
+    letter-spacing: 0.08em;
+}
+
+.tl-heat {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.tl-months,
+.tl-grid {
+    display: grid;
+    grid-template-columns: repeat(53, minmax(0, 1fr));
+    gap: 0;
+}
+
+.tl-months {
+    grid-template-rows: 11px;
+    height: 11px;
+    color: #64748b;
+    font-size: 0.6rem;
+    line-height: 11px;
+}
+
+.tl-months span {
+    overflow: visible;
+    white-space: nowrap;
+}
+
+.tl-grid {
+    grid-template-rows: repeat(7, auto);
+    grid-auto-flow: column;
+}
+
+/* Each slot is a square, and the visible pixel sits in the middle of it, so the gaps are even in both directions. */
+.tl-grid i {
+    position: relative;
+    aspect-ratio: 1;
+}
+
+.tl-grid i::before {
+    content: "";
+    position: absolute;
+    inset: 16%;
+    background: rgba(var(--accent-rgb), 0.07);
+}
+
+.tl-grid .l1::before { background: rgba(var(--accent-rgb), 0.25); }
+.tl-grid .l2::before { background: rgba(var(--accent-rgb), 0.5); }
+.tl-grid .l3::before { background: rgba(var(--accent-rgb), 0.78); }
+.tl-grid .l4::before { background: var(--amber-lite); }
+.tl-grid .l-::before { background: transparent; }
+
+.tl-grid i:hover::before {
+    box-shadow: 0 0 0 1px var(--accent);
+}
+
+.tl-bar {
+    display: flex;
+    gap: 1px;
+    height: 8px;
+    margin-bottom: 8px;
+}
+
+.tl-bar i {
+    display: block;
+    height: 100%;
+    background: rgba(var(--accent-rgb), var(--o));
+}
+
+.tl-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 16px;
+    color: #94a3b8;
+    font-size: 0.7rem;
+}
+
+.tl-lang {
+    white-space: nowrap;
+}
+
+.tl-lang u {
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    margin-right: 6px;
+    background: rgba(var(--accent-rgb), var(--o));
+    text-decoration: none;
+}
+
+.tl-lang b {
+    color: #64748b;
+    font-weight: 400;
+}
+
+.tl-log-head {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid rgba(var(--accent-rgb), 0.3);
+    color: #64748b;
+    font-size: 0.62rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+.tl-log-head span:first-child {
+    color: #e2e8f0;
+    font-weight: 600;
+}
+
+/* a small pulsing dot, since this list follows pushes as echopoint receives them */
+.tl-live::before {
+    content: "";
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    margin-right: 7px;
+    background: var(--accent);
+    animation: tl-pulse 2s ease-in-out infinite;
+}
+
+@keyframes tl-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .tl-live::before {
+        animation: none;
+    }
+}
+
+.tl-commits {
+    display: flex;
+    flex-direction: column;
+}
+
+.tl-commit {
+    position: relative;
+    min-width: 0;
+    padding: 0 0 14px 24px;
+}
+
+.tl-commit:last-child {
+    padding-bottom: 0;
+}
+
+/* the marker, and the line down to the next commit */
+.tl-mark {
+    position: absolute;
+    top: 3px;
+    left: 0;
+    width: 8px;
+    height: 8px;
+    background: var(--accent);
+}
+
+.tl-commit:not(:last-child)::before {
+    content: "";
+    position: absolute;
+    top: 14px;
+    bottom: -3px;
+    left: 3.5px;
+    width: 1px;
+    background: rgba(var(--accent-rgb), 0.45);
+}
+
+.tl-msg {
+    display: block;
+    overflow: hidden;
+    color: #e2e8f0;
+    font-size: 0.82rem;
+    font-weight: 500;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.tl-meta {
+    margin-top: 3px;
+    color: #64748b;
+    font-size: 0.68rem;
+}
+
+.tl-repo {
+    color: var(--accent);
+    font-weight: 500;
+}
+
+.tl-add,
+.tl-del {
+    font-style: normal;
+}
+
+.tl-add { color: var(--accent); }
+.tl-del { color: #ff4d4d; }
+
+.lazy-fail {
+    color: #64748b;
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+}
+
+@media (max-width: 700px) {
+    .tl {
+        padding: 12px;
+    }
+
+    .tl-stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        row-gap: 16px;
+    }
+
+    .tl-stat:nth-child(odd) {
+        padding-left: 0;
+        border-left: 0;
+    }
+
+    .tl-msg {
+        font-size: 0.78rem;
+    }
+}
+
+/* ---- The dystopian layer: the same language as the hero (LED dots, scanning light, cursor), kept to opacity and transform. ---- */
+.tl {
+    isolation: isolate;
+}
+
+/* scanlines and a darkened rim over the whole block; clicks pass straight through */
+.tl-scan {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    pointer-events: none;
+    background:
+        repeating-linear-gradient(to bottom, transparent 0 2px, rgba(0, 0, 0, 0.15) 2px 3px),
+        radial-gradient(ellipse at center, transparent 58%, rgba(0, 0, 0, 0.5) 100%);
+}
+
+/* phosphor glow on the names */
+.tl-repo {
+    text-shadow: 0 0 8px rgba(var(--accent-rgb), 0.3);
+}
+
+/* the streak flickers out of true now and then */
+.tl-stat:nth-child(2) .tl-led {
+    animation: tl-glitch 11s steps(1) infinite;
+}
+
+/* the grid: hot pixels glow, and a scattering of them flash now and then */
+.tl-heat {
+    position: relative;
+    overflow: hidden;
+}
+
+.tl-grid i::before {
+    animation: tl-boot 0.45s ease-out backwards;
+    animation-delay: var(--d, 0ms);
+}
+
+.tl-grid .l3::before { box-shadow: 0 0 5px rgba(var(--accent-rgb), 0.28); }
+.tl-grid .l4::before { box-shadow: 0 0 7px rgba(var(--accent-rgb), 0.5); }
+
+.tw::after {
+    content: "";
+    position: absolute;
+    inset: 16%;
+    background: var(--amber-lite);
+    box-shadow: 0 0 6px rgba(var(--accent-rgb), 0.6);
+    opacity: 0;
+    animation: tl-glint var(--tw, 6s) ease-in-out var(--tw-delay, 2s) infinite;
+}
+
+/* the language bar as a row of LEDs */
+.tl-bar {
+    height: 10px;
+    gap: 0;
+    -webkit-mask: repeating-linear-gradient(90deg, #000 0 5px, transparent 5px 7px);
+    mask: repeating-linear-gradient(90deg, #000 0 5px, transparent 5px 7px);
+}
+
+.tl-log-head span:first-child {
+    letter-spacing: 0.16em;
+}
+
+.tl-mark {
+    box-shadow: 0 0 6px rgba(var(--accent-rgb), 0.5);
+}
+
+.tl-caret {
+    display: block;
+    width: 8px;
+    height: 14px;
+    margin: 12px 0 0 24px;
+    background: var(--accent);
+    animation: tl-blink 1.1s steps(1) infinite;
+}
+
+@keyframes tl-boot {
+    from { opacity: 0; transform: scale(0.15); }
+    to { opacity: 1; transform: none; }
+}
+
+@keyframes tl-glint {
+    0%, 72%, 100% { opacity: 0; }
+    77% { opacity: 0.95; }
+    83% { opacity: 0.1; }
+    89% { opacity: 0.7; }
+    95% { opacity: 0; }
+}
+
+@keyframes tl-blink {
+    50% { opacity: 0; }
+}
+
+@keyframes tl-glitch {
+    0%, 93%, 96%, 100% { transform: none; filter: drop-shadow(0 0 7px rgba(var(--accent-rgb), 0.45)); }
+    94% { transform: translateX(-3px); filter: drop-shadow(-3px 0 rgba(255, 0, 80, 0.85)) drop-shadow(3px 0 rgba(0, 255, 255, 0.85)); }
+    95% { transform: translateX(2px); filter: drop-shadow(3px 0 rgba(255, 0, 80, 0.85)) drop-shadow(-3px 0 rgba(0, 255, 255, 0.85)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .tl-grid i::before,
+    .tl-led rect,
+    .tl-stat:nth-child(2) .tl-led,
+    .tl-caret {
+        animation: none;
+    }
+
+    .tw::after {
+        animation: none;
+    }
+}
+
+/* The room the languages and the commit log will take, held from the first paint so nothing below the block moves when they arrive. */
+.tl-slot-langs {
+    min-height: 77px;
+}
+
+.tl-slot-log {
+    min-height: 301px;
+}
+
+.tl-slot > * {
+    animation: tl-fade 0.35s ease-out;
+}
+
+@keyframes tl-fade {
+    from { opacity: 0; }
+}
+
+@media (max-width: 900px) {
+    .tl-slot-langs {
+        min-height: 98px;
+    }
+}
+
+@media (max-width: 500px) {
+    .tl-slot-langs {
+        min-height: 203px;
+    }
+
+    .tl-slot-log {
+        min-height: 296px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .tl-slot > * {
+        animation: none;
+    }
+}
+
+/* Explicit line heights everywhere in the block: with `normal` the height follows each engine's font metrics (and the fallback
+   font for any glyph the subset lacks), which made the block grow a few pixels in Firefox after it had been laid out. */
+.tl-label,
+.tl-unit,
+.tl-note {
+    line-height: 1.4;
+}
+
+.tl-led {
+    margin-bottom: 1px;
+}
+
+.tl-legend {
+    line-height: 17px;
+}
+
+.tl-log-head {
+    line-height: 1.4;
+}
+
+.tl-msg {
+    line-height: 1.45;
+}
+
+.tl-meta {
+    line-height: 1.4;
+}

@@ -416,44 +416,68 @@ links.forEach((link) => {
     actions.appendChild(buildRow(link.title, link.url, nodes, link));
 });
 dash.appendChild(actions);
-// Terminal mail sits under the list. Its code and styles are fetched while the page is idle, so scrolling down finds them
-// already loaded instead of starting a chain of two requests (module, then stylesheet) at the moment they are needed.
-const mailSection = document.createElement("div");
-mailSection.className = "mail-section";
-const mailHeader = document.createElement("div");
-mailHeader.className = "dashboard-header";
-mailHeader.innerHTML = `<span class="prompt">root@ujjwalvivek:~$</span> mail`;
-const mailHost = document.createElement("div");
-mailHost.className = "mail-host";
-mailHost.dataset.status = "establishing encrypted connection";
-mailSection.append(mailHeader, mailHost);
-dash.appendChild(mailSection);
-// The module and its stylesheet are requested together, so there is one round trip to wait for and not two in a row.
-let mailModule = null;
-const loadMail = () => (mailModule ??= Promise.all([
-    import("./terminalmail.js"),
-    new Promise((resolve) => {
-        const link = document.createElement("link");
-        link.rel = "stylesheet";
-        link.href = "/css/terminalmail.css";
-        link.onload = link.onerror = () => resolve();
-        document.head.appendChild(link);
-    }),
-]).then(([mod]) => mod));
-// Held back until the first screen has settled (fonts, game and wallpaper), so it never competes with them.
-const MAIL_PREFETCH_DELAY_MS = 3500;
-setTimeout(() => {
-    const warm = () => loadMail().catch(() => { });
-    if ("requestIdleCallback" in window) requestIdleCallback(warm, { timeout: 3000 });
-    else warm();
-}, MAIL_PREFETCH_DELAY_MS);
-new IntersectionObserver((entries, observer) => {
-    if (!entries.some((entry) => entry.isIntersecting)) return;
-    observer.disconnect();
-    loadMail()
-        .then((mod) => mod.mountTerminalMail(mailHost))
-        .catch((err) => console.error("Terminal mail failed to load:", err));
-}, { root: container, rootMargin: "500px 0px" }).observe(mailSection);
+// Everything under the list is built lazily: a git summary and the mail terminal. Each section's code
+// and styles are fetched together while the page is idle (once the first screen has settled), so scrolling down finds them already
+// loaded, and the section is mounted when it comes near the visible area. Until then a framed placeholder holds its height.
+const PREFETCH_DELAY_MS = 3500;
+const loadedAssets = new Map();
+function loadAssets(modulePath, cssPath) {
+    if (!loadedAssets.has(modulePath)) {
+        loadedAssets.set(modulePath, Promise.all([
+            import(modulePath),
+            new Promise((resolve) => {
+                const link = document.createElement("link");
+                link.rel = "stylesheet";
+                link.href = cssPath;
+                link.onload = link.onerror = () => resolve();
+                document.head.appendChild(link);
+            }),
+        ]).then(([mod]) => mod));
+    }
+    return loadedAssets.get(modulePath);
+}
+function lazySection({ command, status, kind, hold, holdPhone = hold, module, styles, mount }) {
+    const section = document.createElement("div");
+    section.className = "lazy-section";
+    const header = document.createElement("div");
+    header.className = "dashboard-header";
+    header.innerHTML = `<span class="prompt">root@ujjwalvivek:~$</span> ${command}`;
+    const host = document.createElement("div");
+    host.className = "lazy-host";
+    host.dataset.status = status;
+    if (kind) host.dataset.kind = kind;
+    host.style.setProperty("--hold", `${hold}px`);
+    host.style.setProperty("--hold-phone", `${holdPhone}px`);
+    section.append(header, host);
+    dash.appendChild(section);
+    new IntersectionObserver((entries, observer) => {
+        if (!entries.some((entry) => entry.isIntersecting)) return;
+        observer.disconnect();
+        loadAssets(module, styles)
+            .then((mod) => mount(mod, host))
+            .catch((err) => console.error(`${command} failed to load:`, err));
+    }, { root: container, rootMargin: "500px 0px" }).observe(section);
+    setTimeout(() => {
+        const warm = () => loadAssets(module, styles).catch(() => { });
+        if ("requestIdleCallback" in window) requestIdleCallback(warm, { timeout: 3000 });
+        else warm();
+    }, PREFETCH_DELAY_MS);
+}
+// The repos whose latest commits feed the git summary: everything the list shows, plus this site.
+const featuredRepos = [...new Set([
+    "root",
+    ...links.flatMap((link) => [link.release, link.license?.repo, ...(link.badges || []).filter((b) => b.kind === "stars").map((b) => b.repo)]),
+].filter(Boolean))];
+lazySection({
+    command: "git log --stat", status: "reading git history", kind: "log", hold: 688, holdPhone: 786, // the placeholder height comes from styles.css (data-kind="log")
+    module: "./telemetry.js", styles: "/css/telemetry.css",
+    mount: (mod, host) => mod.mountTelemetry(host, featuredRepos),
+});
+lazySection({
+    command: "mail", status: "establishing encrypted connection", hold: 440, holdPhone: 402, // the finished height of the terminal
+    module: "./terminalmail.js", styles: "/css/terminalmail.css",
+    mount: (mod, host) => mod.mountTerminalMail(host),
+});
 // The custom cursor is only for devices with a real pointer, and it waits until the page is idle.
 if (matchMedia("(hover: hover) and (pointer: fine)").matches) {
     const startCursor = () => import("./cursor.js").then((mod) => mod.startCursor()).catch((err) => console.error("Cursor failed to load:", err));
