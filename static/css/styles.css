@@ -33,6 +33,92 @@ html {
     height: 100%;
     z-index: 0;
     pointer-events: none;
+    opacity: 0;
+    filter: blur(14px);
+    transform: scale(1.04);
+    transition: opacity 2.2s ease-out, filter 2.2s ease-out, transform 2.6s ease-out;
+}
+
+#bg-canvas.is-ready {
+    opacity: 1;
+    filter: none;
+    transform: none;
+}
+
+/* Placeholder while the shaders compile: a faint full-screen amber ambience over a dot matrix, gone once the canvas is in. */
+body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background:
+        radial-gradient(circle, rgba(148, 163, 184, 0.3) 0 1px, transparent 1.5px) 0 0 / 28px 28px,
+        linear-gradient(180deg, rgba(var(--accent-rgb), 0.075), rgba(var(--accent-rgb), 0.035));
+    animation: bg-breathe 3.2s ease-in-out infinite;
+    transition: opacity 1.8s ease-out;
+}
+
+/* A thin amber scan line sweeping down while the shaders compile. */
+body::after {
+    content: "";
+    position: fixed;
+    left: 0;
+    right: 0;
+    top: 0;
+    height: 2px;
+    z-index: 0;
+    pointer-events: none;
+    background: linear-gradient(90deg, transparent, rgba(var(--accent-rgb), 0.9) 50%, transparent);
+    box-shadow: 0 0 18px 4px rgba(var(--accent-rgb), 0.35);
+    transform: translateY(-4vh);
+    animation: bg-scan 2.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    transition: opacity 1.2s ease-out;
+}
+
+body.bg-ready::before,
+body.bg-ready::after {
+    opacity: 0;
+}
+
+body.bg-ready::before {
+    animation-play-state: paused;
+}
+
+@keyframes bg-scan {
+    from {
+        transform: translateY(-4vh);
+    }
+
+    to {
+        transform: translateY(104vh);
+    }
+}
+
+@keyframes bg-breathe {
+    0%, 100% {
+        opacity: 0.45;
+    }
+
+    50% {
+        opacity: 1;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    body::before {
+        animation: none;
+    }
+
+    body::after {
+        display: none;
+    }
+
+    #bg-canvas {
+        transition-duration: 0.01s;
+        filter: none;
+        transform: none;
+    }
 }
 
 .container {

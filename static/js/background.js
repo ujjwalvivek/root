@@ -33,6 +33,15 @@ function mount() {
     return cv;
 }
 
+// The canvas starts transparent and out of focus, and eases in once it has painted its first frames. Until then the
+// CSS placeholder (a breathing glow and grid) holds the screen, so there is no black gap and no sudden pop.
+function reveal(cv) {
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+        cv.classList.add("is-ready");
+        document.body.classList.add("bg-ready");
+    }));
+}
+
 function toScene(engine, stack) {
     return engine.compose(stack.map(({ name, opacity, speed, density, params }) => ({
         fn: engine.primitives[name],
@@ -47,6 +56,7 @@ export async function startBackground() {
     try {
         const gpu = await import(`${SUBSTRATE}/index.js`);
         await gpu.loop(cv, toScene(gpu, layers), palette, { fps: FPS });
+        reveal(cv);
         return "gpu";
     } catch (err) {
         console.warn("WebGPU background unavailable, using Canvas2D:", err);
@@ -55,6 +65,7 @@ export async function startBackground() {
         cv = mount();
         const cpu = await import(`${SUBSTRATE}/cpu.js`);
         cpu.loop(cv, toScene(cpu, classicLayers(mobile)), palette, { fps: FPS });
+        reveal(cv);
         return "cpu";
     }
 }
