@@ -2,7 +2,25 @@
 // To try other wallpapers and stacks, use the lab in tools/substrate and paste its "copy json" output into `layers`.
 const SUBSTRATE = "https://cdn.jsdelivr.net/npm/@ujjwalvivek/substrate@2.0.1/dist";
 const FPS = 30;
-const palette = { primary: "#404040", secondary: "#808080", accent: "#ffaa00", background: "#030303" };
+const warm = { primary: "#404040", secondary: "#808080", accent: "#ffaa00", background: "#030303" };
+const dusk = { primary: "#3d3752", secondary: "#7f78a0", accent: "#b794ff", background: "#040309" };
+// Mutated in place while the sky drifts; the engine re-reads it every frame.
+const palette = { ...warm };
+let renderer = null;
+let violet = 0;
+
+const rgb = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+function mix(a, b, t) {
+    const [x, y] = [rgb(a), rgb(b)];
+    return "#" + x.map((c, i) => Math.round(c + (y[i] - c) * t).toString(16).padStart(2, "0")).join("");
+}
+
+// 0 = the warm palette, 1 = the violet dusk. Called by the page as the game's sky drifts.
+export function setBackgroundViolet(v) {
+    violet = v;
+    for (const key of Object.keys(warm)) palette[key] = mix(warm[key], dusk[key], v);
+    renderer?.setPalette?.(palette);
+}
 
 // Bottom to top.
 const layers = [
@@ -55,7 +73,8 @@ export async function startBackground() {
     let cv = mount();
     try {
         const gpu = await import(`${SUBSTRATE}/index.js`);
-        await gpu.loop(cv, toScene(gpu, layers), palette, { fps: FPS });
+        renderer = await gpu.loop(cv, toScene(gpu, layers), palette, { fps: FPS });
+        setBackgroundViolet(violet);
         reveal(cv);
         return "gpu";
     } catch (err) {

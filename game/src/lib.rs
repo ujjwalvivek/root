@@ -2,6 +2,15 @@ use engine::{BloomSettings, Context, GameAction, GameApp, RenderLayer, SkyParams
 use wasm_bindgen::prelude::*;
 use cadence::{Transport, EuclideanPattern, MarkovChain};
 use core::f32::consts::TAU;
+use core::sync::atomic::{AtomicU32, Ordering};
+
+// How far the sky has drifted toward violet (0..1). The page reads it every frame to recolour its UI.
+static VIOLET: AtomicU32 = AtomicU32::new(0);
+
+#[wasm_bindgen]
+pub fn violet_level() -> f32 {
+    f32::from_bits(VIOLET.load(Ordering::Relaxed))
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum HeroAction {
@@ -75,6 +84,7 @@ struct Dot {
     delay: f32,
     phase: f32,
     color: [f32; 3],
+    tint: bool,
 }
 
 pub struct HeroGame {
@@ -86,6 +96,7 @@ pub struct HeroGame {
     dots: Vec<Dot>,
     sky: SkyTransition,
     sky_stage: usize,
+    violet: f32,
     rng: u32,
     time: f32,
 }
@@ -135,12 +146,20 @@ fn dusk_theme() -> SkyParams {
     }
 }
 
-fn sky_stop(i: usize) -> SkyParams {
-    match i % 3 {
-        0 => dusk_theme(),
-        1 => dusk_warm(),
-        _ => dusk_violet(),
+// Stage 0 fades the haze up from the theme black once. After that it only swings between the warm haze and the violet dusk.
+fn sky_leg(stage: usize) -> SkyTransition {
+    match stage {
+        0 => SkyTransition::new(dusk_theme(), dusk_warm(), 7.0),
+        1 => SkyTransition::new(dusk_warm(), dusk_violet(), 9.0),
+        _ => SkyTransition::new(dusk_violet(), dusk_warm(), 9.0),
     }
+}
+
+// Shifts a warm colour toward violet, keeping its brightness.
+fn tone(c: [f32; 3], v: f32) -> [f32; 3] {
+    let lum = c[0] * 0.5 + c[1] * 0.4 + c[2] * 0.1;
+    let vio = [(0.45 + 0.35 * lum).min(1.0), (0.30 + 0.30 * lum).min(1.0), (0.78 + 0.22 * lum).min(1.0)];
+    [c[0] + (vio[0] - c[0]) * v, c[1] + (vio[1] - c[1]) * v, c[2] + (vio[2] - c[2]) * v]
 }
 
 fn dusk_warm() -> SkyParams {
@@ -210,6 +229,8 @@ fn new_dot(rng: &mut u32, x: f32, y: f32, size: f32, color: [f32; 3]) -> Dot {
         delay: (x / W) * 0.6 + rand_range(rng, 0.0, 0.35),
         phase: rand_range(rng, 0.0, 1.0),
         color,
+        // only the orange dots follow the sky; the white and grey text stays put
+        tint: color[2] < 0.3,
     }
 }
 
@@ -253,7 +274,8 @@ fn push_border(dots: &mut Vec<Dot>, rng: &mut u32, x: f32, y: f32, w: f32, h: f3
     }
 }
 
-fn draw_dot(ctx: &mut Context<HeroAction>, d: &Dot, time: f32, sweep_x: f32) {
+fn draw_dot(ctx: &mut Context<HeroAction>, d: &Dot, time: f32, sweep_x: f32, violet: f32) {
+    let base = if d.tint { tone(d.color, violet) } else { d.color };
     let t = ((time - d.delay) / ASSEMBLE).clamp(0.0, 1.0);
     if t <= 0.0 { return; }
     let e = 1.0 - (1.0 - t) * (1.0 - t) * (1.0 - t);
@@ -267,14 +289,14 @@ fn draw_dot(ctx: &mut Context<HeroAction>, d: &Dot, time: f32, sweep_x: f32) {
         RenderLayer::World,
         Vec2::new(x, y),
         Vec2::new(d.size, d.size),
-        [(d.color[0] * lum).min(1.0), (d.color[1] * lum).min(1.0), (d.color[2] * lum).min(1.0), t],
+        [(base[0] * lum).min(1.0), (base[1] * lum).min(1.0), (base[2] * lum).min(1.0), t],
     );
     let g = d.size * 2.4;
     let off = (g - d.size) / 2.0;
     ctx.draw_rect_additive(
         Vec2::new(x - off, y - off),
         Vec2::new(g, g),
-        [d.color[0], d.color[1], d.color[2], t * (0.05 + sweep * 0.22)],
+        [base[0], base[1], base[2], t * (0.05 + sweep * 0.22)],
     );
 }
 
@@ -319,8 +341,9 @@ impl GameApp for HeroGame {
             embers,
             stars,
             dots,
-            sky: SkyTransition::new(sky_stop(0), sky_stop(1), 7.0),
+            sky: sky_leg(0),
             sky_stage: 0,
+            violet: 0.0,
             rng,
             time: 0.0,
         }
@@ -330,10 +353,17 @@ impl GameApp for HeroGame {
         self.time += dt;
         self.sky.advance(dt);
         if self.sky.done() {
-            // theme -> warm haze -> violet dusk -> back to the theme, and around again
-            self.sky_stage = (self.sky_stage + 1) % 3;
-            self.sky = SkyTransition::new(sky_stop(self.sky_stage), sky_stop(self.sky_stage + 1), 8.0);
+            // warm -> violet -> warm, back and forth
+            self.sky_stage = if self.sky_stage == 1 { 2 } else { 1 };
+            self.sky = sky_leg(self.sky_stage);
         }
+        let p = self.sky.progress();
+        self.violet = match self.sky_stage {
+            0 => 0.0,
+            1 => p,
+            _ => 1.0 - p,
+        };
+        VIOLET.store(self.violet.to_bits(), Ordering::Relaxed);
         self.player.pos.x += self.player.velocity.x * dt;
         self.player.pos.y = 360.0 - self.player.size.y;
         let max_x = 640.0 - self.player.size.x;
@@ -365,9 +395,10 @@ impl GameApp for HeroGame {
         // light band that sweeps over the wordmark once everything has landed, then rests
         let sweep_x = if self.time < ASSEMBLE + 1.2 { -1000.0 } else { -60.0 + ((self.time - ASSEMBLE - 1.2) * 110.0) % 900.0 };
         for d in &self.dots {
-            draw_dot(ctx, d, self.time, sweep_x);
+            draw_dot(ctx, d, self.time, sweep_x, self.violet);
         }
         ctx.draw_rect(self.player.pos, self.player.size, [0.8, 0.8, 0.8, 1.0]);
+        let trail_c = tone([1.0, 0.5, 0.1], self.violet);
         for i in 0..TRAIL {
             let p = self.trail[(self.trail_head + i) % TRAIL];
             let f = (i + 1) as f32 / TRAIL as f32;
@@ -375,7 +406,7 @@ impl GameApp for HeroGame {
             ctx.draw_rect_additive(
                 Vec2::new(p.x + (self.player.size.x - s) / 2.0, p.y + (self.player.size.y - s) / 2.0),
                 Vec2::new(s, s),
-                [1.0, 0.5, 0.1, 0.16 * f * f],
+                [trail_c[0], trail_c[1], trail_c[2], 0.16 * f * f],
             );
         }
         for e in &self.embers {
@@ -387,7 +418,8 @@ impl GameApp for HeroGame {
             let fade_out = ((1.0 - t) * 3.0).min(1.0);
             let alpha = fade_in * fade_out * 0.75;
             let s = e.size * (1.0 - t * 0.2);
-            ctx.draw_rect_additive(Vec2::new(x, y), Vec2::new(s, s), [e.r, e.g, e.b, alpha]);
+            let c = tone([e.r, e.g, e.b], self.violet);
+            ctx.draw_rect_additive(Vec2::new(x, y), Vec2::new(s, s), [c[0], c[1], c[2], alpha]);
         }
     }
     fn ui(

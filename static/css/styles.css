@@ -10,8 +10,15 @@
     --bg-color: #050505;
     --text-color: #f8fafc;
     --font-family: "Monaspace Neon", monospace;
-    --accent: #ffaa00;
-    --accent-rgb: 255, 170, 0;
+    /* 0 = amber, 1 = violet dusk. The game writes this every frame while its sky drifts, so the page follows it. */
+    --violet: 0;
+    --accent: color-mix(in srgb, #b794ff calc(var(--violet) * 100%), #ffaa00);
+    --accent-rgb: calc(255 + (183 - 255) * var(--violet)), calc(170 + (148 - 170) * var(--violet)), calc(255 * var(--violet));
+    --coral: color-mix(in srgb, #ff8ad8 calc(var(--violet) * 100%), #ff7a59);
+    --coral-rgb: 255, calc(122 + (138 - 122) * var(--violet)), calc(89 + (216 - 89) * var(--violet));
+    --amber-lite: color-mix(in srgb, #e3d2ff calc(var(--violet) * 100%), #ffcb5c);
+    --amber-dim: color-mix(in srgb, #7a5fb8 calc(var(--violet) * 100%), #a9801f);
+    --amber-deep: color-mix(in srgb, #2b1c55 calc(var(--violet) * 100%), #513600);
 }
 
 body,
@@ -217,7 +224,7 @@ body.bg-ready::before {
 }
 
 .hero-text .hero-hint[data-heat="2"] {
-    color: #ff7a59;
+    color: var(--coral);
     font-weight: 700;
     letter-spacing: 0.22em;
 }
@@ -284,7 +291,7 @@ body.bg-ready::before {
     width: 24px;
     height: 24px;
     border: 4px solid transparent;
-    border-top-color: #ffaa00;
+    border-top-color: var(--accent);
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
 }
@@ -452,8 +459,21 @@ body.bg-ready::before {
 }
 
 .badge-link {
+    position: relative;
     display: flex;
     align-items: center;
+}
+
+/* The badge svgs are baked amber. Once one has loaded, a violet copy of it (same cached file, hue-shifted once, not animated)
+   sits on top and fades in with --violet, so the colour crossfades between the two instead of sweeping through every hue. */
+.badge-link::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: var(--badge-img, none) center / 100% 100% no-repeat;
+    filter: hue-rotate(225deg);
+    opacity: var(--violet);
 }
 
 .badge-link:hover {
@@ -493,9 +513,9 @@ body.bg-ready::before {
 
 .meta-license {
     text-transform: uppercase;
-    color: #ff7a59;
+    color: var(--coral);
     /* A text-decoration (not a border) so the underline waits for the font together with the text. */
-    text-decoration: underline dotted rgba(255, 122, 89, 0.55);
+    text-decoration: underline dotted rgba(var(--coral-rgb), 0.55);
     text-underline-offset: 4px;
 }
 
@@ -546,7 +566,7 @@ body.bg-ready::before {
 }
 
 .meta-release.is-fresh {
-    color: #ffcb5c;
+    color: var(--amber-lite);
     text-shadow: 0 0 10px rgba(var(--accent-rgb), 0.65);
 }
 
@@ -555,7 +575,7 @@ body.bg-ready::before {
 }
 
 .meta-release.is-old {
-    color: #a9801f;
+    color: var(--amber-dim);
 }
 
 .meta-release.is-prerelease .ver {
@@ -592,7 +612,7 @@ body.bg-ready::before {
     height: 20px;
     overflow: hidden;
     border: 2px solid var(--accent);
-    background: linear-gradient(90deg, #111111 var(--split), #513600 var(--split));
+    background: linear-gradient(90deg, #111111 var(--split), var(--amber-deep) var(--split));
     cursor: default;
 }
 

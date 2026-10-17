@@ -1,4 +1,4 @@
-import { startBackground } from "./background.js";
+import { startBackground, setBackgroundViolet } from "./background.js";
 import { links } from "./projects.js";
 function installGlobal(name, value) {
     if (typeof globalThis[name] === "function") return;
@@ -402,7 +402,10 @@ links.forEach((link) => {
         a.style.setProperty("--split", `${sk.split}%`);
         const b = document.createElement("img");
         b.className = "link-badge";
-        b.addEventListener("load", () => a.classList.remove("is-loading"));
+        b.addEventListener("load", () => {
+            a.classList.remove("is-loading");
+            a.style.setProperty("--badge-img", `url("${b.currentSrc || b.src}")`);
+        });
         b.addEventListener("error", () => a.classList.replace("is-loading", "is-failed"));
         b.dataset.src = img;
         a.appendChild(b);
@@ -446,8 +449,21 @@ function wordmarkSettled() {
 wordmarkSettled()
     .then(startBackground)
     .catch((err) => { console.error("Background init failed:", err); });
+// The game drifts its sky from the theme to a warm haze to a violet dusk; mirror that into --violet so the UI colours follow.
+function followSky(mod) {
+    if (typeof mod.violet_level !== "function" || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const root = document.documentElement;
+    let last = -1;
+    const tick = () => {
+        const v = mod.violet_level();
+        if (Math.abs(v - last) > 0.002) { last = v; root.style.setProperty("--violet", v.toFixed(3)); setBackgroundViolet(v); }
+        requestAnimationFrame(tick);
+    };
+    tick();
+}
 initGame()
-    .then(() => {
+    .then((mod) => {
+        followSky(mod);
         const canvases = document.querySelectorAll("canvas");
         const gameCanvas = Array.from(canvases).find((c) => c.id !== "bg-canvas");
         if (gameCanvas) {
