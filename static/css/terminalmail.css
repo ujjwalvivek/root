@@ -1,0 +1,523 @@
+/* Terminal mail. Loaded on demand by terminalmail.js. Colours come from the page's own variables, so it follows the amber and violet theme. */
+.tm {
+    --tm-rgb: var(--accent-rgb);
+    --tm-ok: #4ade80;
+    --tm-ok-rgb: 74, 222, 128;
+    --tm-warn: var(--amber-lite);
+    --tm-err: #ff4d4d;
+    --tm-info: var(--amber-lite);
+    --tm-dim-rgb: 148, 163, 184;
+    --tm-dark: #0a0a0a;
+    position: relative;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 1000px;
+    box-sizing: border-box;
+    border: 2px solid var(--accent);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+    background: #0a0a0a;
+    font-family: var(--font-family);
+    color: var(--text-color);
+    text-align: left;
+}
+
+.tm-header {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.4rem 1rem;
+    background: var(--tm-dark);
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.tm-header::after,
+.tm-help::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--accent);
+    opacity: 0.7;
+}
+
+.tm-header::after {
+    bottom: 0;
+}
+
+.tm-help::before {
+    top: 0;
+    height: 1px;
+}
+
+.tm-dots {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.tm-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    transition: transform 0.2s ease;
+}
+
+.tm-dot:hover {
+    transform: scale(1.15);
+}
+
+.tm-dot-red { background: var(--tm-err); }
+.tm-dot-amber { background: var(--tm-warn); }
+.tm-dot-green { background: var(--tm-ok); }
+
+.tm-title {
+    flex: 1;
+    font-size: 0.75rem;
+    font-weight: 300;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.tm-status {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    transition: background 0.3s ease;
+}
+
+.tm-status.is-ready {
+    background: var(--tm-ok);
+    box-shadow: 0 0 6px rgba(var(--tm-ok-rgb), 0.6);
+}
+
+.tm-status.is-sending {
+    background: var(--tm-warn);
+    animation: tm-pulse 1.5s infinite;
+}
+
+.tm-body {
+    display: grid;
+    grid-template-columns: 126px minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) auto;
+    padding: 1rem;
+    height: 350px;
+    overflow: hidden;
+}
+
+.tm-panel {
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    border: 2px solid rgba(var(--tm-rgb), 0.5);
+    border-radius: 2px;
+    overflow: hidden;
+    min-height: 0;
+}
+
+.tm-panel-head {
+    padding: 0.2rem 0.4rem;
+    background: rgba(var(--tm-rgb), 0.3);
+    border-bottom: 1px solid rgba(var(--tm-rgb), 0.5);
+    color: var(--accent);
+    font-size: 0.65rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    white-space: nowrap;
+}
+
+.tm-panel-body {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.tm-side {
+    grid-column: 1;
+    grid-row: 1;
+    margin-right: 0.75rem;
+}
+
+.tm-compose {
+    grid-column: 2;
+    grid-row: 1;
+    cursor: text;
+}
+
+.tm-side-body {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding-top: 0.5rem;
+}
+
+.tm-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.tm-step {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    width: 100%;
+    padding: 0.2rem 0.6rem;
+    border: none;
+    background: transparent;
+    color: #94a3b8;
+    font: inherit;
+    font-size: 0.75rem;
+    text-align: left;
+    cursor: default;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+
+.tm-step:not(:disabled) {
+    cursor: pointer;
+}
+
+.tm-step:not(:disabled):hover {
+    background: rgba(var(--tm-ok-rgb), 0.1);
+}
+
+.tm-step.is-active {
+    color: var(--accent);
+    background: rgba(var(--tm-rgb), 0.1);
+}
+
+.tm-step.is-done {
+    color: var(--tm-ok);
+}
+
+.tm-marker {
+    width: 0.7rem;
+    flex-shrink: 0;
+    font-size: 0.6rem;
+    line-height: 1;
+    text-align: center;
+}
+
+.tm-step.is-active .tm-marker {
+    text-shadow: 0 0 6px rgba(var(--tm-rgb), 0.5);
+}
+
+.tm-cat {
+    width: 110px;
+    height: 110px;
+    margin-top: auto;
+    align-self: center;
+    image-rendering: pixelated;
+}
+
+.tm-output {
+    height: 100%;
+    box-sizing: border-box;
+    overflow-x: hidden;
+    overflow-y: auto;
+    padding: 0.6rem 0.75rem;
+    font-size: 0.8rem;
+    font-weight: 300;
+    line-height: 1.6;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(var(--tm-rgb), 0.4) transparent;
+}
+
+.tm-line {
+    margin-bottom: 0.2rem;
+    padding-left: 0.5rem;
+    border-left: 3px solid rgba(var(--tm-rgb), 0.25);
+    border-radius: 2px;
+    white-space: pre-wrap;
+    word-break: break-word;
+    animation: tm-slide 0.15s ease-out;
+}
+
+.tm-blank {
+    border: none;
+    line-height: 0.2rem;
+}
+
+.tm-l-user { color: var(--accent); }
+.tm-l-system { color: var(--text-color); letter-spacing: -0.3px; }
+.tm-l-prompt { color: var(--tm-info); }
+.tm-l-success { color: var(--tm-ok); }
+.tm-l-error { color: var(--tm-err); }
+.tm-l-warn { color: var(--tm-warn); }
+.tm-l-info { color: var(--text-color); opacity: 0.8; }
+
+.tm-input-row {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    border: 1px dashed rgba(var(--tm-rgb), 0.5);
+    border-radius: 2px;
+}
+
+.tm-prompt {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    font-size: 0.8rem;
+}
+
+.tm-tilde { color: var(--accent); }
+.tm-slash { color: rgba(var(--tm-dim-rgb), 0.6); }
+.tm-step-name { color: var(--accent); font-weight: 600; }
+.tm-caret { color: var(--tm-ok); white-space: pre; }
+.tm-spinner { display: inline-block; width: 1ch; color: var(--tm-warn); text-align: center; }
+
+.tm-input {
+    flex: 1;
+    width: 0;
+    min-width: 0;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: var(--text-color);
+    caret-color: var(--accent);
+    font: inherit;
+    font-size: 0.8rem;
+}
+
+.tm-input::placeholder {
+    color: rgba(var(--tm-dim-rgb), 0.55);
+}
+
+.tm-input-wrap {
+    display: flex;
+    flex: 1;
+    min-width: 0;
+}
+
+.tm-input:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.tm-help {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.4rem 1rem;
+    background: var(--tm-dark);
+}
+
+.tm-preview,
+.tm-hints {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.tm-preview {
+    flex: 1;
+    min-width: 0;
+}
+
+.tm-hints {
+    gap: 0.75rem;
+}
+
+.tm-field {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-width: 0;
+    font-size: 0.7rem;
+}
+
+.tm-label {
+    flex-shrink: 0;
+    color: var(--accent);
+    font-size: 0.6rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.tm-label::after {
+    content: ":";
+}
+
+.tm-value {
+    max-width: 100px;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.tm-waiting { color: rgba(var(--tm-dim-rgb), 0.45); }
+.tm-dim { color: rgba(var(--tm-dim-rgb), 0.6); }
+
+.tm-hint {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.tm-key {
+    padding: 0.1rem 0.35rem;
+    border: 1px dashed rgba(var(--tm-rgb), 0.3);
+    border-radius: 1px;
+    background: rgba(var(--tm-rgb), 0.06);
+    color: var(--accent);
+    font: inherit;
+    font-size: 0.6rem;
+    white-space: nowrap;
+}
+
+.tm-hint-label {
+    color: #94a3b8;
+    font-size: 0.6rem;
+    white-space: nowrap;
+}
+
+.tm.is-success {
+    animation: tm-ok-flash 0.6s ease-out;
+}
+
+.tm.is-error {
+    animation: tm-shake 0.5s ease-out;
+}
+
+@keyframes tm-slide {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: none; }
+}
+
+@keyframes tm-pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.7; transform: scale(1.2); }
+}
+
+@keyframes tm-ok-flash {
+    0% { box-shadow: inset 0 0 0 1px var(--tm-ok); }
+    50% { box-shadow: inset 0 0 20px rgba(var(--tm-ok-rgb), 0.15); }
+    100% { box-shadow: none; }
+}
+
+@keyframes tm-shake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-3px); }
+    40% { transform: translateX(3px); }
+    60% { transform: translateX(-2px); }
+    80% { transform: translateX(2px); }
+}
+
+@media (max-width: 700px) {
+    .tm-body {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: auto minmax(0, 1fr) auto;
+        height: auto;
+        min-height: 300px;
+        max-height: 480px;
+        padding: 0.75rem;
+    }
+
+    .tm-cat {
+        display: none;
+    }
+
+    .tm-side {
+        grid-row: 1;
+        margin: 0 0 0.5rem;
+    }
+
+    .tm-side-body {
+        padding: 0.4rem;
+    }
+
+    .tm-steps {
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 0.25rem;
+    }
+
+    .tm-step {
+        width: auto;
+        padding: 0.25rem 0.5rem;
+        border: 1px solid rgba(var(--tm-dim-rgb), 0.15);
+        border-radius: 2px;
+        font-size: 0.65rem;
+    }
+
+    .tm-compose {
+        grid-column: 1;
+        grid-row: 2;
+        min-height: 150px;
+    }
+
+    .tm-input-row {
+        grid-row: 3;
+        margin-top: 0.5rem;
+    }
+
+    .tm-output,
+    .tm-prompt {
+        font-size: 0.7rem;
+    }
+
+    /* iOS zooms the page when a field under 16px gets focus. The field stays 16px and is scaled down to the 0.7rem
+       the rest of the terminal uses (11.2 / 16 = 0.7), stretched so it still fills the row. */
+    .tm-input-wrap {
+        position: relative;
+        height: 1.9em;
+        font-size: 0.7rem;
+    }
+
+    .tm-input {
+        position: absolute;
+        top: 50%;
+        left: 0;
+        width: calc(100% / 0.7);
+        font-size: 16px;
+        transform: translateY(-50%) scale(0.7);
+        transform-origin: left center;
+    }
+
+    .tm-help {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+        padding: 0.35rem 0.75rem;
+    }
+}
+
+@media (max-width: 500px) {
+    .tm-body {
+        padding: 0.5rem;
+    }
+
+    .tm-header {
+        padding: 0.4rem 0.75rem;
+    }
+
+    .tm-output {
+        padding: 0.4rem 0.5rem;
+    }
+
+    .tm-preview {
+        gap: 0.5rem;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .tm-line,
+    .tm.is-success,
+    .tm.is-error,
+    .tm-status.is-sending {
+        animation: none;
+    }
+}

@@ -416,6 +416,23 @@ links.forEach((link) => {
     actions.appendChild(buildRow(link.title, link.url, nodes, link));
 });
 dash.appendChild(actions);
+// Terminal mail sits under the list. Its code and styles are only fetched once it is close to the visible area.
+const mailSection = document.createElement("div");
+mailSection.className = "mail-section";
+const mailHeader = document.createElement("div");
+mailHeader.className = "dashboard-header";
+mailHeader.innerHTML = `<span class="prompt">root@ujjwalvivek:~$</span> mail`;
+const mailHost = document.createElement("div");
+mailHost.className = "mail-host";
+mailSection.append(mailHeader, mailHost);
+dash.appendChild(mailSection);
+new IntersectionObserver((entries, observer) => {
+    if (!entries.some((entry) => entry.isIntersecting)) return;
+    observer.disconnect();
+    import("./terminalmail.js")
+        .then((mod) => mod.mountTerminalMail(mailHost))
+        .catch((err) => console.error("Terminal mail failed to load:", err));
+}, { root: container, rootMargin: "400px 0px" }).observe(mailSection);
 container.appendChild(dash);
 body.appendChild(container);
 if (window.location.protocol !== "https:" && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1") {
