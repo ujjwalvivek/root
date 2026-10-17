@@ -224,13 +224,13 @@ const NPM = "https://www.npmjs.com/package/@ujjwalvivek";
 const baseBadge = "bg=111111&badgeColor=513600&textColor=e8e8e8&border=ffaa00&borderWidth=2&rx=0&px=0&py=0";
 function badgeFor(b) {
     switch (b.kind) {
-        case "custom": return { img: `${EP}/svg/badges/custom?${baseBadge}&logo=${b.logo}&leftText=${b.left}&rightText=${b.right}`, href: b.href };
-        case "stars": return { img: `${EP}/svg/badges/stars?repo=${b.repo}&${baseBadge}&logo=github`, href: `${GH}/${b.repo}` };
-        case "npm": return { img: `${EP}/svg/badges/npm?${baseBadge}&logo=npm&package=${b.alias || b.pkg}`, href: `${NPM}/${b.pkg}` };
-        case "cargo": return { img: `${EP}/svg/badges/cargo?crate=${b.crate}&${baseBadge}&logo=rust`, href: `https://crates.io/crates/${b.crate}` };
-        case "pypi": return { img: `${EP}/svg/badges/pypi?package=${b.pkg}&${baseBadge}&logo=python`, href: `https://pypi.org/project/${b.pkg}` };
-        case "docker": return { img: `${EP}/svg/badges/docker?image=${b.image}&${baseBadge}&logo=docker`, href: `https://hub.docker.com/r/ujjwalvivek/${b.image}` };
-        case "status": return { img: `${EP}/svg/status?target=${b.target}&${baseBadge}&logo=globe`, href: b.href };
+        case "custom": return { img: `${EP}/svg/root/custom?${baseBadge}&logo=${b.logo}&leftText=${b.left}&rightText=${b.right}`, href: b.href };
+        case "stars": return { img: `${EP}/svg/root/stars?repo=${b.repo}&${baseBadge}&logo=github`, href: `${GH}/${b.repo}` };
+        case "npm": return { img: `${EP}/svg/root/npm?${baseBadge}&logo=npm&package=${b.alias || b.pkg}`, href: `${NPM}/${b.pkg}` };
+        case "cargo": return { img: `${EP}/svg/root/cargo?crate=${b.crate}&${baseBadge}&logo=rust`, href: `https://crates.io/crates/${b.crate}` };
+        case "pypi": return { img: `${EP}/svg/root/pypi?package=${b.pkg}&${baseBadge}&logo=python`, href: `https://pypi.org/project/${b.pkg}` };
+        case "docker": return { img: `${EP}/svg/root/docker?image=${b.image}&${baseBadge}&logo=docker`, href: `https://hub.docker.com/r/ujjwalvivek/${b.image}` };
+        case "status": return { img: `${EP}/svg/root/status?target=${b.target}&${baseBadge}&logo=globe`, href: b.href };
     }
 }
 // Rough size of a badge before its svg arrives, so the skeleton holds the space (px per char measured off real badges).
