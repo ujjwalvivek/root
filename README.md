@@ -1,12 +1,22 @@
 # root.ujjwalvivek.com
 
-![game canvas](media/zoom-game.png)
+<!-- releasegen:demo:start -->
+![game scene](media/hero.gif)
+<!-- releasegen:demo:end -->
 
 Honestly, a "**Link**"tree, but nicer. Website uses `Zola` under the hood, depends on the `journey` stack and `substrate` for a dystopian setting, all wrapped with a vanilla css. All audio is synthesized and goes through an AudioWorklet, with a ScriptProcessor fallback (iOS, old browsers).
 
-![journey row](media/zoom-journey.png)
+![hero](media/hero.png)
 
-![echopoint row](media/zoom-echopoint.png)
+## Git log
+
+Drawn from the echopoint data, so it takes the page colours.
+
+![git log](media/gitlog.gif)
+
+## Mail Me
+
+![terminal mail](media/mail.gif)
 
 ## Build and run
 
@@ -17,27 +27,16 @@ cd ..
 zola serve --interface [IP_ADDRESS] # 0.0.0.0 --port 1111
 ```
 
-![hero](media/hero.png)
+## Acknowledgements
 
-![links](media/links.png)
+![journey row](media/zoom-journey.png)
 
-## Global Clicker
+![substrate row](media/zoom-substrate.png)
 
-![click counter](media/zoom-clicker.png)
-
-## Acknowledgement
-
-- [Journey Engine](https://crates.io/crates/journey-engine)
-- [Resonance](https://crates.io/crates/journey-sound)
-- [Cadence](https://crates.io/crates/journey-sequencer)
-- [Substrate](https://www.npmjs.com/package/@ujjwalvivek/substrate)
-- [Echopoint](https://echopoint.ujjwalvivek.com)
-- [Zola](https://github.com/getzola/zola)
-
-## Phone
-
-<img src="media/mobile-hero.png" width="320"> <img src="media/mobile-links.png" width="320">
+![echopoint row](media/zoom-echopoint.png)
 
 ## License
+
+![click counter](media/clicker.gif)
 
 This repository is licensed with the [MIT LICENSE](License).
