@@ -401,13 +401,14 @@ function ageLabel(days) {
 function rowMeta(link) {
   const meta = document.createElement("span");
   meta.className = "row-meta";
-  if (link.license) {
+  // `license` is one object, or a list of them for a repo with several (each can name its own file with `path`).
+  for (const license of [].concat(link.license || [])) {
     const a = document.createElement("a");
-    a.href = `${GH}/${link.license.repo}/blob/main/LICENSE`;
+    a.href = `${GH}/${license.repo}/blob/main/${license.path || "LICENSE"}`;
     a.target = "_blank";
     a.className = "hover-link meta-license";
-    a.title = `${link.license.spdx} licensed`;
-    a.textContent = link.license.spdx;
+    a.title = `${license.spdx} licensed`;
+    a.textContent = license.spdx;
     meta.appendChild(a);
   }
   if (link.release) {
@@ -556,7 +557,7 @@ const badgeLoader =
       )
     : null;
 links.forEach((link) => {
-  const nodes = link.badges.map((badge) => {
+  const nodes = (link.badges || []).map((badge) => {
     const { img, href } = badgeFor(badge);
     const a = document.createElement("a");
     a.href = href;
@@ -663,7 +664,7 @@ const featuredRepos = [
       "root",
       ...links.flatMap((link) => [
         link.release,
-        link.license?.repo,
+        ...[].concat(link.license || []).map((license) => license.repo),
         ...(link.badges || [])
           .filter((b) => b.kind === "stars")
           .map((b) => b.repo),

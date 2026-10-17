@@ -2,7 +2,7 @@
 //
 // One row per working website. Related things (docs, packages, itch pages, shortcuts) hang off
 // that row as badges, rendered through echopoint (see badgeFor in main.js).
-// A row's `license: { repo, spdx }` and `release: "<repo>"` are not badges: they are drawn as quiet text next to the title.
+// A row's `license: { repo, spdx, path? }` (or a list of them, `path` being the file in the repo, LICENSE by default) and `release: "<repo>"` are not badges: they are drawn as quiet text next to the title.
 // The license is static; the release tag and age are read from echopoint (a ~1.5 KB record), so no svg is fetched.
 //
 // badge kinds and their fields:
@@ -273,10 +273,47 @@ export const links = [
     ],
   },
   {
+    title: "github.com/ujjwalvivek/thereckoning",
+    url: `${gh}/thereckoning`,
+    license: { repo: "thereckoning", spdx: "MIT" },
+    badges: [{ kind: "stars", repo: "thereckoning" }],
+  },
+  {
+    title: "rubis.ujjwalvivek.com",
+    url: "https://rubis.ujjwalvivek.com",
+    license: { repo: "rubis", spdx: "MIT" },
+    badges: [
+      {
+        kind: "custom",
+        logo: "demo",
+        left: "demo",
+        right: "GIF",
+        href: `${gh}/rubis/blob/main/public/showcase.gif`,
+      },
+      { kind: "stars", repo: "rubis" },
+    ],
+  },
+  {
     title: "tinybench.ujjwalvivek.com",
     url: "https://tinybench.ujjwalvivek.com",
     license: { repo: "tinybench", spdx: "MIT" },
     badges: [{ kind: "stars", repo: "tinybench" }],
+  },
+  {
+    title: "thejourney.ujjwalvivek.com",
+    url: "https://thejourney.ujjwalvivek.com",
+    license: { repo: "journey-original", spdx: "MIT" },
+    release: "journey-original",
+    badges: [
+      {
+        kind: "custom",
+        logo: "demo",
+        left: "demo",
+        right: "GIF",
+        href: `${gh}/journey-original/blob/main/media/showcase.gif`,
+      },
+      { kind: "stars", repo: "journey-original" },
+    ],
   },
   {
     title: "pixess.ujjwalvivek.com",
@@ -285,9 +322,286 @@ export const links = [
     badges: [{ kind: "stars", repo: "pixess" }],
   },
   {
-    title: "github.com/ujjwalvivek/thereckoning",
-    url: `${gh}/thereckoning`,
-    license: { repo: "thereckoning", spdx: "MIT" },
-    badges: [{ kind: "stars", repo: "thereckoning" }],
+    title: "shadertrain.ujjwalvivek.com",
+    url: "https://shadertrain.ujjwalvivek.com",
+    release: "shadertrain",
+    badges: [
+      {
+        kind: "custom",
+        logo: "demo",
+        left: "demo",
+        right: "GIF",
+        href: `${gh}/shadertrain/blob/main/public/showcase.gif`,
+      },
+      { kind: "stars", repo: "shadertrain" },
+    ],
+  },
+
+  {
+    title: "github.com/ujjwalvivek/8bitaxe",
+    url: `${gh}/8bitaxe`,
+    license: { repo: "8bitaxe", spdx: "MIT" },
+    release: "8bitaxe",
+    badges: [
+      {
+        kind: "custom",
+        logo: "demo",
+        left: "demo",
+        right: "GIF",
+        href: `${gh}/8bitaxe/blob/main/assets/showcase.gif`,
+      },
+      { kind: "stars", repo: "8bitaxe" },
+    ],
+  },
+  {
+    title: "github.com/ujjwalvivek/bootsnaktor",
+    url: `${gh}/bootsnaktor`,
+    license: { repo: "bootsnaktor", spdx: "BSD-2-Clause" },
+    release: "bootsnaktor",
+    badges: [
+      {
+        kind: "custom",
+        logo: "docs",
+        left: "docs",
+        right: "MD",
+        href: `${gh}/bootsnaktor/blob/main/README.md`,
+      },
+      {
+        kind: "custom",
+        logo: "binaries",
+        left: "full",
+        right: "IMG",
+        href: `${gh}/bootsnaktor/blob/main/build/bootsnaktor.full.img`,
+      },
+      {
+        kind: "custom",
+        logo: "binaries",
+        left: "boot",
+        right: "512B",
+        href: `${gh}/bootsnaktor/blob/main/build/bootsnaktor.img`,
+      },
+      { kind: "stars", repo: "bootsnaktor" },
+    ],
+  },
+  {
+    title: "chess.ujjwalvivek.com",
+    url: "https://chess.ujjwalvivek.com",
+    license: { repo: "chessengine", spdx: "MIT OR Apache-2.0" },
+    release: "chessengine",
+    badges: [
+      {
+        kind: "custom",
+        logo: "docs",
+        left: "docs",
+        right: "ADR",
+        href: `${gh}/chessengine/blob/main/docs/ADR.md`,
+      },
+      {
+        kind: "custom",
+        logo: "cube",
+        left: "pieces",
+        right: "SVG",
+        href: `${gh}/chessengine/tree/main/gui/assets/pieces`,
+      },
+      {
+        kind: "custom",
+        logo: "database",
+        left: "data",
+        right: "NNUE",
+        href: `${gh}/chessengine/tree/main/data`,
+      },
+      { kind: "stars", repo: "chessengine" },
+    ],
+  },
+  {
+    title: "lunaland.ujjwalvivek.com",
+    url: "https://lunaland.ujjwalvivek.com",
+    license: { repo: "lunaland", spdx: "GPL-2.0" },
+    badges: [
+      {
+        kind: "custom",
+        logo: "demo",
+        left: "demo",
+        right: "GIF",
+        href: `${gh}/lunaland/blob/main/assets/demo.gif`,
+      },
+      {
+        kind: "custom",
+        logo: "terminal",
+        left: "shader",
+        right: "WGSL",
+        href: `${gh}/lunaland/blob/main/shaders/render.wgsl`,
+      },
+      { kind: "stars", repo: "lunaland" },
+    ],
+  },
+  {
+    title: "github.com/ujjwalvivek/r2go",
+    url: `${gh}/r2go`,
+    license: { repo: "r2go", spdx: "MIT" },
+    release: "r2go",
+    badges: [
+      {
+        kind: "custom",
+        logo: "docs",
+        left: "docs",
+        right: "MD",
+        href: `${gh}/r2go/blob/main/README.md`,
+      },
+      {
+        kind: "custom",
+        logo: "cube",
+        left: "screenshots",
+        right: "PNG",
+        href: `${gh}/r2go/tree/main/docs/screenshots`,
+      },
+      {
+        kind: "custom",
+        logo: "binaries",
+        left: "download",
+        right: "R2GO",
+        href: `${gh}/r2go/releases/latest`,
+      },
+      { kind: "stars", repo: "r2go" },
+    ],
+  },
+  {
+    title: "github.com/ujjwalvivek/releasegen",
+    url: `${gh}/releasegen`,
+    license: [
+      { repo: "releasegen", spdx: "MIT", path: "LICENSES/MIT.txt" },
+      { repo: "releasegen", spdx: "GLWTPL", path: "LICENSES/GLWTPL.txt" },
+    ],
+    release: "releasegen",
+    badges: [
+      {
+        kind: "custom",
+        logo: "demo",
+        left: "demo",
+        right: "GIF",
+        href: `${gh}/releasegen/blob/main/assets/demo.gif`,
+      },
+      {
+        kind: "custom",
+        logo: "docs",
+        left: "docs",
+        right: "MD",
+        href: `${gh}/releasegen/blob/main/README.md`,
+      },
+      { kind: "stars", repo: "releasegen" },
+    ],
+  },
+  {
+    title: "github.com/ujjwalvivek/voxelhalla",
+    url: `${gh}/voxelhalla`,
+    license: { repo: "voxelhalla", spdx: "MIT" },
+    release: "voxelhalla",
+    badges: [
+      {
+        kind: "custom",
+        logo: "demo",
+        left: "demo",
+        right: "GIF",
+        href: `${gh}/voxelhalla/blob/main/assets/voxelhalla.gif`,
+      },
+      { kind: "stars", repo: "voxelhalla" },
+    ],
+  },
+  {
+    title: "github.com/ujjwalvivek/bunchoftools",
+    url: `${gh}/bunchoftools`,
+    license: { repo: "bunchoftools", spdx: "GPL-3.0" },
+    release: "bunchoftools",
+    badges: [
+      {
+        kind: "custom",
+        logo: "docs",
+        left: "docs",
+        right: "ADR",
+        href: `${gh}/bunchoftools/blob/main/ADR.md`,
+      },
+      {
+        kind: "custom",
+        logo: "cube",
+        left: "screenshot",
+        right: "PNG",
+        href: `${gh}/bunchoftools/blob/main/demo.png`,
+      },
+      { kind: "stars", repo: "bunchoftools" },
+    ],
+  },
+  {
+    title: "ironvesper.ujjwalvivek.com",
+    url: "https://ironvesper.ujjwalvivek.com",
+    license: { repo: "htmlraycaster", spdx: "MIT" },
+    badges: [
+      {
+        kind: "custom",
+        logo: "demo",
+        left: "demo",
+        right: "GIF",
+        href: `${gh}/htmlraycaster/blob/main/showcase.gif`,
+      },
+      {
+        kind: "custom",
+        logo: "docs",
+        left: "source",
+        right: "HTML",
+        href: `${gh}/htmlraycaster/blob/main/index.html`,
+      },
+      { kind: "stars", repo: "htmlraycaster" },
+    ],
+  },
+  {
+    title: "github.com/ujjwalvivek/kanban.pwsh",
+    url: `${gh}/kanban.pwsh`,
+    license: { repo: "kanban.pwsh", spdx: "MIT" },
+    badges: [
+      {
+        kind: "custom",
+        logo: "demo",
+        left: "demo",
+        right: "GIF",
+        href: `${gh}/kanban.pwsh/blob/main/assets/demo.gif`,
+      },
+      {
+        kind: "custom",
+        logo: "docs",
+        left: "docs",
+        right: "MD",
+        href: `${gh}/kanban.pwsh/blob/main/README.md`,
+      },
+      { kind: "stars", repo: "kanban.pwsh" },
+    ],
+  },
+  {
+    title: "github.com/ujjwalvivek/kuki",
+    url: `${gh}/kuki`,
+    license: { repo: "kuki", spdx: "MIT" },
+    release: "kuki",
+    badges: [
+      {
+        kind: "custom",
+        logo: "binaries",
+        left: "download",
+        right: "EXE",
+        href: `${gh}/kuki/releases/latest/download/Kuki.exe`,
+      },
+      { kind: "stars", repo: "kuki" },
+    ],
+  },
+  {
+    title: "github.com/ujjwalvivek/llmeter",
+    url: `${gh}/llmeter`,
+    license: { repo: "llmeter", spdx: "MIT" },
+    release: "llmeter",
+    badges: [{ kind: "stars", repo: "llmeter" }],
+  },
+
+  {
+    title: "stonkclimbracing.ujjwalvivek.com",
+    url: "https://stonkclimbracing.ujjwalvivek.com",
+    license: { repo: "stonkclimbracing", spdx: "MIT" },
+    badges: [{ kind: "stars", repo: "stonkclimbracing" }],
   },
 ];
