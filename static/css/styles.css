@@ -182,6 +182,7 @@ body.bg-ready::before {
     text-shadow: 0 0 8px rgba(var(--accent-rgb), 0.6);
     display: inline-block;
     cursor: default;
+    font-weight: 700;
 }
 
 .hero-subtitle::after {
@@ -400,18 +401,18 @@ body.bg-ready::before {
 }
 
 /* The terminal mail under the list. The host reserves its height so the page does not jump when it loads in. */
-.mail-section {
+.lazy-section {
     display: flex;
     flex-direction: column;
     gap: 20px;
     margin-top: 12px;
 }
 
-.mail-host {
-    min-height: 458px;
+.lazy-host {
+    min-height: var(--hold, 300px);
 }
 
-.mail-host:not(.is-mounted) {
+.lazy-host:not(.is-mounted) {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -422,7 +423,7 @@ body.bg-ready::before {
     letter-spacing: 0.08em;
 }
 
-.mail-host:not(.is-mounted)::before {
+.lazy-host:not(.is-mounted)::before {
     content: attr(data-status) "...";
     animation: mail-wait 1.4s ease-in-out infinite;
 }
@@ -432,19 +433,60 @@ body.bg-ready::before {
     50% { opacity: 1; }
 }
 
-.mail-host.is-mounted {
+.lazy-host.is-mounted {
     min-height: 0;
 }
 
+/* The git block's finished height is its fixed parts plus the contribution grid, whose squares scale with the width, so the
+   placeholder is sized with the same sum from the section's own width and nothing moves when the block arrives. */
+.lazy-section {
+    container-type: inline-size;
+}
+
+.lazy-host[data-kind="log"]:not(.is-mounted) {
+    min-height: calc(546px + (100cqw - 40px) * 0.1321 + 15px);
+    /* the same frame the block wears once it arrives: dashed edge, four corner brackets */
+    border: 2px dashed rgba(255, 255, 255, 0.05);
+    background-color: #0a0a0a;
+    background-origin: border-box;
+    background-repeat: no-repeat;
+    background-image:
+        linear-gradient(rgb(var(--accent-rgb)), rgb(var(--accent-rgb))), linear-gradient(rgb(var(--accent-rgb)), rgb(var(--accent-rgb))),
+        linear-gradient(rgb(var(--accent-rgb)), rgb(var(--accent-rgb))), linear-gradient(rgb(var(--accent-rgb)), rgb(var(--accent-rgb))),
+        linear-gradient(rgb(var(--accent-rgb)), rgb(var(--accent-rgb))), linear-gradient(rgb(var(--accent-rgb)), rgb(var(--accent-rgb))),
+        linear-gradient(rgb(var(--accent-rgb)), rgb(var(--accent-rgb))), linear-gradient(rgb(var(--accent-rgb)), rgb(var(--accent-rgb)));
+    background-size: 16px 2px, 2px 16px, 16px 2px, 2px 16px, 16px 2px, 2px 16px, 16px 2px, 2px 16px;
+    background-position: left top, left top, right top, right top, left bottom, left bottom, right bottom, right bottom;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+}
+
+@media (max-width: 900px) {
+    .lazy-host[data-kind="log"]:not(.is-mounted) {
+        min-height: calc(567px + (100cqw - 40px) * 0.1321 + 15px);
+    }
+}
+
+@media (max-width: 700px) {
+    .lazy-host[data-kind="log"]:not(.is-mounted) {
+        min-height: calc(641px + (100cqw - 28px) * 0.1321 + 15px);
+    }
+}
+
+@media (max-width: 500px) {
+    .lazy-host[data-kind="log"]:not(.is-mounted) {
+        min-height: calc(732px + (100cqw - 28px) * 0.1321 + 15px);
+    }
+}
+
 @media (prefers-reduced-motion: reduce) {
-    .mail-host:not(.is-mounted)::before {
+    .lazy-host:not(.is-mounted)::before {
         animation: none;
     }
 }
 
 @media (max-width: 700px) {
-    .mail-host {
-        min-height: 520px;
+    .lazy-host {
+        min-height: var(--hold-phone, 300px);
     }
 }
 

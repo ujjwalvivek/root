@@ -358,17 +358,30 @@ actions.className = "action-buttons";
 // so it never competes with the font, the wasm or the wallpaper. The skeleton holds the space until then.
 // A stars badge first asks echopoint for the repo's star count (a ~1.5 KB record): at 0 the badge is dropped without
 // ever fetching its svg. If the count cannot be read the badge is shown anyway.
+// A row's height depends on its star count (a repo with no stars has no badge line), so the counts are fetched as soon as the list is
+// built, not when a row scrolls into view, and the last counts seen are kept so a return visit lays out the right rows from the first frame.
+const STAR_CACHE_KEY = "root:stars";
+let starCache = {};
+try { starCache = JSON.parse(localStorage.getItem(STAR_CACHE_KEY) || "{}"); } catch (_) { }
 const starCounts = new Map();
 function starCount(repo) {
     if (!starCounts.has(repo)) {
         starCounts.set(repo, fetch(`${EP}/v1/store/github:${repo}:repo`)
             .then((r) => (r.ok ? r.json() : null))
             .then((d) => (d && typeof d.stargazers_count === "number" ? d.stargazers_count : null))
-            .catch(() => null));
+            .catch(() => null)
+            .then((n) => {
+                if (n != null) {
+                    starCache[repo] = n;
+                    try { localStorage.setItem(STAR_CACHE_KEY, JSON.stringify(starCache)); } catch (_) { }
+                }
+                return n;
+            }));
     }
     return starCounts.get(repo);
 }
 function loadBadge(a) {
+    if (!a.isConnected) return;
     const img = a.querySelector("img");
     img.fetchPriority = "low";
     img.src = img.dataset.src;
@@ -394,8 +407,16 @@ links.forEach((link) => {
         const a = document.createElement("a");
         a.href = href;
         const counting = badge.kind === "stars" && badgeLoader;
-        a.className = `hover-link badge-link ${counting ? "is-counting" : "is-loading"}`;
-        if (counting) a.dataset.starsRepo = badge.repo;
+        // known to have stars from the last visit: show its skeleton straight away; otherwise hold the line back until the count is in
+        const hasStars = counting && starCache[badge.repo] > 0;
+        a.className = `hover-link badge-link ${counting && !hasStars ? "is-counting" : "is-loading"}`;
+        if (counting) {
+            a.dataset.starsRepo = badge.repo;
+            starCount(badge.repo).then((n) => {
+                if (n === 0) a.remove();
+                else a.classList.replace("is-counting", "is-loading");
+            });
+        }
         a.target = "_blank";
         const sk = badgeSkeleton(badge);
         a.style.setProperty("--w", `${sk.width}px`);
