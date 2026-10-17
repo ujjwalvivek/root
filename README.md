@@ -1,7 +1,7 @@
 # root.ujjwalvivek.com
 
 <!-- releasegen:demo:start -->
-![game scene](media/hero.gif)
+<img src="media/hero.gif" alt="game scene" width="100%">
 <!-- releasegen:demo:end -->
 
 Honestly, a "**Link**"tree, but nicer. Website uses `Zola` under the hood, depends on the `journey` stack and `substrate` for a dystopian setting, all wrapped with a vanilla css. All audio is synthesized and goes through an AudioWorklet, with a ScriptProcessor fallback (iOS, old browsers).
@@ -12,11 +12,11 @@ Honestly, a "**Link**"tree, but nicer. Website uses `Zola` under the hood, depen
 
 Drawn from the echopoint data, so it takes the page colours.
 
-![git log](media/gitlog.gif)
+<img src="media/gitlog.gif" alt="git log" width="100%">
 
 ## Mail Me
 
-![terminal mail](media/mail.gif)
+<img src="media/mail.gif" alt="terminal mail" width="100%">
 
 ## Build and run
 
@@ -37,6 +37,6 @@ zola serve --interface [IP_ADDRESS] # 0.0.0.0 --port 1111
 
 ## License
 
-![click counter](media/clicker.gif)
+<img src="media/clicker.gif" alt="click counter" width="100%">
 
 This repository is licensed with the [MIT LICENSE](License).
