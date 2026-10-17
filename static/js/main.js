@@ -431,6 +431,24 @@ if (window.location.protocol !== "https:" && window.location.hostname !== "local
     };
     if (navigator.gpu) navigator.gpu.requestAdapter = () => Promise.resolve(null);
 }
+const NativeResizeObserver = window.ResizeObserver;
+window.ResizeObserver = class extends NativeResizeObserver {
+    constructor(callback) {
+        const reported = new WeakMap();
+        super((entries, observer) => {
+            const real = entries.filter((entry) => {
+                if (!(entry.target instanceof HTMLCanvasElement) || entry.target.id === "bg-canvas") return true;
+                const box = entry.devicePixelContentBoxSize?.[0] ?? entry.contentBoxSize?.[0];
+                if (!box) return true;
+                const before = reported.get(entry.target);
+                if (before && Math.abs(box.inlineSize - before.w) <= 1 && Math.abs(box.blockSize - before.h) <= 1) return false;
+                reported.set(entry.target, { w: box.inlineSize, h: box.blockSize });
+                return true;
+            });
+            if (real.length) callback(real, observer);
+        });
+    }
+};
 // The wallpaper's shaders now compile off the main thread (substrate 2.0.2), so it no longer has to wait for the dots to land.
 // A short hold after the game canvas appears lets the first dots start falling before it begins; if the game never shows,
 // it starts anyway after WALLPAPER_MAX_WAIT_MS.
@@ -451,16 +469,33 @@ wordmarkSettled()
     .then(startBackground)
     .catch((err) => { console.error("Background init failed:", err); });
 // The game drifts its sky from the theme to a warm haze to a violet dusk; mirror that into --violet so the UI colours follow.
+const VIOLET_STEP_MS = 100;
+const SCROLL_REST_MS = 160;
 function followSky(mod) {
     if (typeof mod.violet_level !== "function" || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const root = document.documentElement;
     let last = -1;
-    const tick = () => {
+    let lastWrite = 0;
+    let scrolling = false;
+    let restTimer = 0;
+    document.addEventListener("scroll", () => {
+        scrolling = true;
+        clearTimeout(restTimer);
+        restTimer = setTimeout(() => { scrolling = false; }, SCROLL_REST_MS);
+    }, { capture: true, passive: true });
+    const tick = (now) => {
         const v = mod.violet_level();
-        if (Math.abs(v - last) > 0.002) { last = v; root.style.setProperty("--violet", v.toFixed(3)); setBackgroundViolet(v); }
+        if (Math.abs(v - last) > 0.002) {
+            setBackgroundViolet(v);
+            if (!scrolling && now - lastWrite >= VIOLET_STEP_MS) {
+                last = v;
+                lastWrite = now;
+                root.style.setProperty("--violet", v.toFixed(3));
+            }
+        }
         requestAnimationFrame(tick);
     };
-    tick();
+    requestAnimationFrame(tick);
 }
 initGame()
     .then((mod) => {
