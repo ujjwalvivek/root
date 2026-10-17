@@ -433,6 +433,12 @@ new IntersectionObserver((entries, observer) => {
         .then((mod) => mod.mountTerminalMail(mailHost))
         .catch((err) => console.error("Terminal mail failed to load:", err));
 }, { root: container, rootMargin: "400px 0px" }).observe(mailSection);
+// The custom cursor is only for devices with a real pointer, and it waits until the page is idle.
+if (matchMedia("(hover: hover) and (pointer: fine)").matches) {
+    const startCursor = () => import("./cursor.js").then((mod) => mod.startCursor()).catch((err) => console.error("Cursor failed to load:", err));
+    if ("requestIdleCallback" in window) requestIdleCallback(startCursor, { timeout: 3000 });
+    else setTimeout(startCursor, 1500);
+}
 container.appendChild(dash);
 body.appendChild(container);
 if (window.location.protocol !== "https:" && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1") {
