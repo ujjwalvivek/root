@@ -341,6 +341,9 @@ body.bg-ready::before {
 }
 
 #game-canvas {
+    /* The engine makes the canvas focusable so it can read keys, and a click then draws the browser's focus ring around it. */
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
     display: block;
     width: 100% !important;
     height: auto !important;
