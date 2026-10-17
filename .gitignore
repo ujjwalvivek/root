@@ -2,3 +2,4 @@ target/
 public/
 static/game/
 tools/substrate/
+media/*.mp4
