@@ -428,7 +428,23 @@ if (window.location.protocol !== "https:" && window.location.hostname !== "local
     };
     if (navigator.gpu) navigator.gpu.requestAdapter = () => Promise.resolve(null);
 }
-startBackground()
+// The wallpaper compiles several shaders at once, which stalls frames while the game is still assembling the wordmark.
+// Hold it back until the game canvas is up and the dots have landed; if the game never shows, start it anyway.
+const WORDMARK_SETTLE_MS = 2400;
+const WALLPAPER_MAX_WAIT_MS = 6000;
+function wordmarkSettled() {
+    return new Promise((resolve) => {
+        const t0 = performance.now();
+        const poll = () => {
+            if (document.getElementById("game-canvas")) return setTimeout(resolve, WORDMARK_SETTLE_MS);
+            if (performance.now() - t0 > WALLPAPER_MAX_WAIT_MS) return resolve();
+            requestAnimationFrame(poll);
+        };
+        poll();
+    });
+}
+wordmarkSettled()
+    .then(startBackground)
     .catch((err) => { console.error("Background init failed:", err); });
 initGame()
     .then(() => {
