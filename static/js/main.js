@@ -276,11 +276,20 @@ function rowMeta(link) {
         meta.appendChild(a);
     }
     if (link.release) {
+        // The slot is laid out immediately with invisible placeholder text, so the row wraps the same way before and after
+        // the release arrives and nothing below it jumps.
         const a = document.createElement("a");
-        a.hidden = true;
+        a.className = "hover-link meta-release is-pending";
         a.target = "_blank";
+        const ghostVer = document.createElement("span");
+        ghostVer.className = "ver";
+        ghostVer.textContent = "v0.0.0";
+        const ghostAge = document.createElement("span");
+        ghostAge.className = "age";
+        ghostAge.textContent = "00mo";
+        a.append(ghostVer, ghostAge);
         releaseInfo(link.release).then((info) => {
-            if (!info) return;
+            if (!info) return a.remove();
             const days = (Date.now() - Date.parse(info.published_at)) / 864e5;
             const tier = days <= 30 ? "is-fresh" : days <= 120 ? "is-recent" : "is-old";
             a.className = `hover-link meta-release ${tier}${/^v?0\./.test(info.tag_name) ? " is-prerelease" : ""}`;
@@ -292,8 +301,7 @@ function rowMeta(link) {
             const age = document.createElement("span");
             age.className = "age";
             age.textContent = ageLabel(days);
-            a.append(ver, age);
-            a.hidden = false;
+            a.replaceChildren(ver, age);
         });
         meta.appendChild(a);
     }

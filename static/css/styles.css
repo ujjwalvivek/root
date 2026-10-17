@@ -484,17 +484,27 @@ body.bg-ready::before {
 
 .row-meta a {
     font-size: inherit;
+}
+
+.meta-release {
     text-decoration: none;
 }
 
 .meta-license {
     text-transform: uppercase;
     color: #ff7a59;
-    border-bottom: 1px dotted rgba(255, 122, 89, 0.55);
+    /* A text-decoration (not a border) so the underline waits for the font together with the text. */
+    text-decoration: underline dotted rgba(255, 122, 89, 0.55);
+    text-underline-offset: 4px;
 }
 
 .meta-license:hover {
     color: #f8fafc;
+}
+
+.meta-release.is-pending {
+    visibility: hidden;
+    pointer-events: none;
 }
 
 .meta-release .ver {
