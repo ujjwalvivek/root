@@ -42,7 +42,9 @@ html.has-cursor :is(input, textarea, [contenteditable="true"]) {
     margin: -2px 0 0 -2px;
     border-radius: 50%;
     background: var(--accent);
-    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.85), 0 0 8px rgba(var(--accent-rgb), 0.7);
+    box-shadow:
+        0 0 0 1px rgba(0, 0, 0, 0.85),
+        0 0 8px rgba(var(--accent-rgb), 0.7);
 }
 
 .cur-ring {
@@ -64,10 +66,26 @@ html.has-cursor :is(input, textarea, [contenteditable="true"]) {
     filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.9));
 }
 
-.cur-tl { top: 0; left: 0; border-width: 2px 0 0 2px; }
-.cur-tr { top: 0; right: 0; border-width: 2px 2px 0 0; }
-.cur-bl { bottom: 0; left: 0; border-width: 0 0 2px 2px; }
-.cur-br { right: 0; bottom: 0; border-width: 0 2px 2px 0; }
+.cur-tl {
+    top: 0;
+    left: 0;
+    border-width: 2px 0 0 2px;
+}
+.cur-tr {
+    top: 0;
+    right: 0;
+    border-width: 2px 2px 0 0;
+}
+.cur-bl {
+    bottom: 0;
+    left: 0;
+    border-width: 0 0 2px 2px;
+}
+.cur-br {
+    right: 0;
+    bottom: 0;
+    border-width: 0 2px 2px 0;
+}
 
 .cur-label {
     color: var(--accent);
@@ -77,7 +95,9 @@ html.has-cursor :is(input, textarea, [contenteditable="true"]) {
     letter-spacing: 0.14em;
     white-space: nowrap;
     opacity: 0.8;
-    text-shadow: 0 0 3px #000, 0 0 2px #000;
+    text-shadow:
+        0 0 3px #000,
+        0 0 2px #000;
 }
 
 /* Locked onto a link or button: the brackets frame it and the readout says so. */
@@ -86,7 +106,9 @@ html.has-cursor :is(input, textarea, [contenteditable="true"]) {
 }
 
 .cur.is-lock .cur-dot {
-    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.85), 0 0 12px rgba(var(--accent-rgb), 1);
+    box-shadow:
+        0 0 0 1px rgba(0, 0, 0, 0.85),
+        0 0 12px rgba(var(--accent-rgb), 1);
 }
 
 .cur.is-lock .cur-label {
@@ -105,7 +127,9 @@ html.has-cursor :is(input, textarea, [contenteditable="true"]) {
 }
 
 @keyframes cur-turn {
-    to { transform: rotate(360deg); }
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 @media (prefers-reduced-motion: reduce) {
