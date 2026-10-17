@@ -2,6 +2,7 @@
 //
 // One row per working website. Related things (docs, packages, itch pages, shortcuts) hang off
 // that row as badges, rendered through echopoint (see badgeFor in main.js).
+// A row with `pin: true` stays on top of the list; the rest are sorted by language.
 // A row's `license: { repo, spdx, path? }` (or a list of them, `path` being the file in the repo, LICENSE by default) and `release: "<repo>"` are not badges: they are drawn as quiet text next to the title.
 // The license is static; the release tag and age are read from echopoint (a ~1.5 KB record), so no svg is fetched.
 //
@@ -20,6 +21,7 @@ export const links = [
   {
     title: "ujjwalvivek.com",
     url: "https://ujjwalvivek.com",
+    pin: true,
     license: { repo: "portfolio", spdx: "MIT" },
     release: "portfolio",
     badges: [{ kind: "stars", repo: "portfolio" }],

@@ -696,6 +696,39 @@ links.forEach((link) => {
   });
 });
 dash.appendChild(actions);
+// The list is sorted by the dominant language of each row's repo, biggest share of the code first, with no grouping or indent. A row marked
+// `pin` stays on top, rows whose language could not be read come after the sorted ones, and rows with no repo (itch, steam) are last; rows of
+// the same language keep the order of projects.js. With every language already known the list is laid out right here, before the first
+// paint; otherwise it is held back (at an estimated height, so the sections below do not load early) until the missing languages arrive or
+// LANG_WAIT_MS passes.
+async function layoutList() {
+  const repos = [...new Set(listRows.map((r) => r.repo).filter(Boolean))];
+  const pending = repos.filter((repo) => !langCache[repo]).map(langInfo);
+  if (!rankCache) pending.push(langRank());
+  if (pending.length) {
+    actions.style.minHeight = `${links.length * 60}px`;
+    await Promise.race([
+      Promise.all(pending),
+      new Promise((resolve) => setTimeout(resolve, LANG_WAIT_MS)),
+    ]);
+    actions.style.minHeight = "";
+  }
+  const share = rankCache?.bytes || {};
+  const bytesOf = (repo) => share[langCache[repo]?.l] || 0;
+  const tier = ({ pinned, repo }) =>
+    pinned ? 0 : !repo ? 3 : bytesOf(repo) ? 1 : 2;
+  const sorted = [...listRows].sort(
+    (a, b) =>
+      tier(a) - tier(b) ||
+      (tier(a) === 1 ? bytesOf(b.repo) - bytesOf(a.repo) : 0),
+  );
+  actions.append(...sorted.map((r) => r.row));
+  repos
+    .filter((repo) => Date.now() - (langCache[repo]?.t || 0) > LANG_TTL_MS)
+    .forEach(langInfo);
+  if (Date.now() - (rankCache?.t || 0) > LANG_TTL_MS) langRank();
+}
+layoutList();
 // Everything under the list is built lazily: a git summary and the mail terminal. Each section's code
 // and styles are fetched together while the page is idle (once the first screen has settled), so scrolling down finds them already
 // loaded, and the section is mounted when it comes near the visible area. Until then a framed placeholder holds its height.
