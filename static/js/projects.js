@@ -27,6 +27,55 @@ export const links = [
     badges: [{ kind: "stars", repo: "portfolio" }],
   },
   {
+    title: "design.ujjwalvivek.com",
+    url: "https://design.ujjwalvivek.com",
+    pin: true,
+    badges: [
+      {
+        kind: "custom",
+        logo: "docs",
+        left: "web",
+        right: "DS",
+        href: "https://design.ujjwalvivek.com/#/web",
+      },
+      {
+        kind: "custom",
+        logo: "docs",
+        left: "native",
+        right: "DS",
+        href: "https://design.ujjwalvivek.com/#/native",
+      },
+      {
+        kind: "custom",
+        logo: "docs",
+        left: "web-tools",
+        right: "DS",
+        href: "https://design.ujjwalvivek.com/#/web-tools",
+      },
+      {
+        kind: "custom",
+        logo: "docs",
+        left: "dioramas",
+        right: "DS",
+        href: "https://design.ujjwalvivek.com/#/dioramas",
+      },
+      {
+        kind: "custom",
+        logo: "docs",
+        left: "paper",
+        right: "DS",
+        href: "https://design.ujjwalvivek.com/#/paper",
+      },
+      {
+        kind: "custom",
+        logo: "docs",
+        left: "bunui",
+        right: "DS",
+        href: "https://design.ujjwalvivek.com/#/bunui",
+      },
+    ],
+  },
+  {
     title: "ujjwalvivek.itch.io",
     url: "https://ujjwalvivek.itch.io/",
     badges: [
